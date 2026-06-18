@@ -10,7 +10,16 @@ import type { Appointment, PreOpAssessment } from '@/types';
 
 const ApprovalDetailPage: React.FC = () => {
   const router = useRouter();
-  const { getAppointmentById, approveAppointment, rejectAppointment, currentUser } = useAppStore();
+  const {
+    getAppointmentById,
+    approveAppointment,
+    rejectAppointment,
+    resubmitAppointment,
+    savePreOpAssessment,
+    currentUser,
+    isMyApprovalTurn
+  } = useAppStore();
+
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -33,6 +42,7 @@ const ApprovalDetailPage: React.FC = () => {
         setAppointment(apt);
         if (apt.preOpAssessment) {
           setAssessment(apt.preOpAssessment);
+          setDoctorSigned(!!apt.preOpAssessment.doctorSignature);
         }
       } else {
         Taro.showToast({ title: '预约不存在', icon: 'none' });
@@ -40,14 +50,31 @@ const ApprovalDetailPage: React.FC = () => {
     }
   }, [router.params.id, getAppointmentById]);
 
-  const handleApprove = () => {
+  const refreshAppointment = () => {
     if (!appointment) return;
-    
-    const currentNode = appointment.approvalNodes[appointment.currentApprovalIndex];
-    
-    if (currentNode?.type === 'doctor' && !assessment.informedConsent) {
-      Taro.showToast({ title: '请先完成术前评估', icon: 'none' });
-      return;
+    const updated = getAppointmentById(appointment.id);
+    if (updated) setAppointment(updated);
+  };
+
+  const canOperate = appointment ? isMyApprovalTurn(appointment) : false;
+  const currentNode = appointment?.approvalNodes[appointment.currentApprovalIndex];
+  const isDoctorNode = currentNode?.type === 'doctor';
+  const isPending = appointment?.status === 'pending_approval';
+  const wasRejected = appointment?.approvalNodes.some(n => n.status === 'rejected') || false;
+
+  const handleApprove = () => {
+    if (!appointment || !canOperate) return;
+
+    if (isDoctorNode) {
+      if (!assessment.informedConsent) {
+        Taro.showToast({ title: '请先完成知情同意', icon: 'none' });
+        return;
+      }
+      if (!doctorSigned) {
+        Taro.showToast({ title: '请先完成医生签字', icon: 'none' });
+        return;
+      }
+      savePreOpAssessment(appointment.id, assessment, currentUser.name);
     }
 
     Taro.showModal({
@@ -55,13 +82,34 @@ const ApprovalDetailPage: React.FC = () => {
       content: `确定要通过${currentNode?.name || '审批'}吗？`,
       success: (res) => {
         if (res.confirm) {
-          const comment = currentNode?.type === 'doctor' ? '术前评估完成，同意手术' : '资料齐全，同意';
-          approveAppointment(appointment.id, comment);
-          
-          const updated = getAppointmentById(appointment.id);
-          if (updated) setAppointment(updated);
-          
-          Taro.showToast({ title: '已通过', icon: 'success' });
+          const comment = isDoctorNode ? '术前评估完成，同意手术' : '审核通过';
+          const ok = approveAppointment(appointment.id, comment);
+          if (ok) {
+            Taro.showToast({ title: '已通过', icon: 'success' });
+            refreshAppointment();
+          } else {
+            Taro.showToast({ title: '操作失败', icon: 'none' });
+          }
+        }
+      }
+    });
+  };
+
+  const handleResubmit = () => {
+    if (!appointment || !canOperate) return;
+
+    Taro.showModal({
+      title: '确认重新提交',
+      content: '补充资料后重新提交审批？',
+      success: (res) => {
+        if (res.confirm) {
+          const ok = resubmitAppointment(appointment.id, '补充资料后重新提交');
+          if (ok) {
+            Taro.showToast({ title: '已重新提交', icon: 'success' });
+            refreshAppointment();
+          } else {
+            Taro.showToast({ title: '操作失败', icon: 'none' });
+          }
         }
       }
     });
@@ -73,20 +121,21 @@ const ApprovalDetailPage: React.FC = () => {
 
   const confirmReject = () => {
     if (!appointment) return;
-    
+
     if (!rejectReason.trim()) {
       Taro.showToast({ title: '请输入驳回原因', icon: 'none' });
       return;
     }
 
-    rejectAppointment(appointment.id, rejectReason.trim());
-    
-    const updated = getAppointmentById(appointment.id);
-    if (updated) setAppointment(updated);
-    
-    setShowRejectModal(false);
-    setRejectReason('');
-    Taro.showToast({ title: '已驳回', icon: 'none' });
+    const ok = rejectAppointment(appointment.id, rejectReason.trim());
+    if (ok) {
+      refreshAppointment();
+      setShowRejectModal(false);
+      setRejectReason('');
+      Taro.showToast({ title: '已驳回，退回上一环节', icon: 'none' });
+    } else {
+      Taro.showToast({ title: '操作失败', icon: 'none' });
+    }
   };
 
   const handleSign = () => {
@@ -95,10 +144,7 @@ const ApprovalDetailPage: React.FC = () => {
   };
 
   const handleConsentChange = (checked: boolean) => {
-    setAssessment(prev => ({
-      ...prev,
-      informedConsent: checked
-    }));
+    setAssessment(prev => ({ ...prev, informedConsent: checked }));
   };
 
   if (!appointment) {
@@ -109,11 +155,9 @@ const ApprovalDetailPage: React.FC = () => {
     );
   }
 
-  const currentNode = appointment.approvalNodes[appointment.currentApprovalIndex];
-  const isPending = appointment.status === 'pending_approval';
-  const showApproveButton = isPending;
-  const showRejectButton = isPending;
-  const isDoctorNode = currentNode?.type === 'doctor';
+  const savedAssessment = appointment.preOpAssessment;
+  const showAssessmentForm = isDoctorNode && canOperate && isPending;
+  const showAssessmentView = savedAssessment && !showAssessmentForm;
 
   return (
     <ScrollView className={styles.approvalDetailPage} scrollY>
@@ -122,7 +166,7 @@ const ApprovalDetailPage: React.FC = () => {
           <Text>{appointment.projectName}</Text>
           <StatusTag status={appointment.status} />
         </View>
-        
+
         <View className={styles.infoList}>
           <View className={styles.infoItem}>
             <Text className={styles.infoLabel}>顾客</Text>
@@ -152,29 +196,40 @@ const ApprovalDetailPage: React.FC = () => {
               <Text style={{ fontSize: 28, color: '#4E5969' }}>当前节点</Text>
               <View className={styles.currentStep}>{currentNode.name}</View>
             </View>
+            {canOperate && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontSize: 24, color: '#1890ff' }}>✓ 轮到您审批</Text>
+              </View>
+            )}
+            {!canOperate && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontSize: 24, color: '#86909c' }}>等待{currentNode.name}处理</Text>
+              </View>
+            )}
           </View>
         )}
 
-        {appointment.status === 'rejected' && appointment.approvalNodes.some(n => n.status === 'rejected') && (
+        {wasRejected && (
           <View className={styles.rejectReason}>
             <Text className={styles.rejectReasonText}>
               驳回原因：{appointment.approvalNodes.find(n => n.status === 'rejected')?.comment || '无'}
+              {'\n'}驳回人：{appointment.approvalNodes.find(n => n.status === 'rejected')?.operatorName || '无'}
             </Text>
           </View>
         )}
       </View>
 
       <View className={styles.section}>
-        <ApprovalFlow 
-          nodes={appointment.approvalNodes} 
-          currentIndex={appointment.currentApprovalIndex} 
+        <ApprovalFlow
+          nodes={appointment.approvalNodes}
+          currentIndex={appointment.currentApprovalIndex}
         />
       </View>
 
-      {isDoctorNode && isPending && (
+      {showAssessmentForm && (
         <View className={styles.assessmentSection}>
-          <Text className={styles.sectionTitle}>术前评估</Text>
-          
+          <Text className={styles.sectionTitle}>术前评估（需填写）</Text>
+
           <View className={styles.assessmentForm}>
             <View className={styles.formItem}>
               <Text className={styles.formLabel}>既往病史</Text>
@@ -227,7 +282,7 @@ const ApprovalDetailPage: React.FC = () => {
             </View>
 
             <View className={styles.formItem}>
-              <View 
+              <View
                 className={styles.checkboxItem}
                 onClick={() => handleConsentChange(!assessment.informedConsent)}
               >
@@ -242,7 +297,7 @@ const ApprovalDetailPage: React.FC = () => {
           </View>
 
           <View className={styles.signatureSection} style={{ marginTop: 24, padding: 0, boxShadow: 'none' }}>
-            <Text className={styles.formLabel}>医生签字</Text>
+            <Text className={styles.formLabel}>医生签字（必须签字才能通过）</Text>
             <View className={styles.signatureBox} onClick={handleSign}>
               {doctorSigned ? (
                 <Text className={styles.signatureSigned}>{currentUser.name}</Text>
@@ -257,6 +312,49 @@ const ApprovalDetailPage: React.FC = () => {
         </View>
       )}
 
+      {showAssessmentView && (
+        <View className={styles.assessmentSection}>
+          <Text className={styles.sectionTitle}>术前评估记录</Text>
+
+          <View className={styles.infoList}>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>既往病史</Text>
+              <Text className={styles.infoContent}>{savedAssessment.medicalHistory || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>过敏史</Text>
+              <Text className={styles.infoContent}>{savedAssessment.allergyHistory || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>当前用药</Text>
+              <Text className={styles.infoContent}>{savedAssessment.currentMedication || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>体格检查</Text>
+              <Text className={styles.infoContent}>{savedAssessment.physicalExamination || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>风险评估</Text>
+              <Text className={styles.infoContent}>{savedAssessment.riskAssessment || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>知情同意</Text>
+              <Text className={styles.infoContent}>
+                {savedAssessment.informedConsent ? '✓ 已签署' : '未签署'}
+              </Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>医生签字</Text>
+              <Text className={styles.infoContent}>{savedAssessment.doctorSignature || '无'}</Text>
+            </View>
+            <View className={styles.infoItem}>
+              <Text className={styles.infoLabel}>评估日期</Text>
+              <Text className={styles.infoContent}>{savedAssessment.assessmentDate || '无'}</Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {appointment.notes && (
         <View className={styles.section}>
           <Text className={styles.sectionTitle}>备注信息</Text>
@@ -265,14 +363,25 @@ const ApprovalDetailPage: React.FC = () => {
       )}
 
       <View className={styles.bottomBar}>
-        {showRejectButton && (
-          <View className={classnames(styles.btn, styles.btnDanger)} onClick={handleReject}>
-            驳回
-          </View>
+        {canOperate && isPending && (
+          <>
+            <View className={classnames(styles.btn, styles.btnDanger)} onClick={handleReject}>
+              驳回
+            </View>
+            {wasRejected ? (
+              <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleResubmit}>
+                重新提交
+              </View>
+            ) : (
+              <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleApprove}>
+                通过审批
+              </View>
+            )}
+          </>
         )}
-        {showApproveButton && (
-          <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleApprove}>
-            通过审批
+        {!canOperate && isPending && (
+          <View className={classnames(styles.btn, styles.btnOutline)} style={{ flex: 1 }}>
+            等待{currentNode?.name || '他人'}处理
           </View>
         )}
         {!isPending && (
@@ -288,20 +397,20 @@ const ApprovalDetailPage: React.FC = () => {
             <Text className={styles.modalTitle}>驳回原因</Text>
             <Textarea
               className={styles.modalTextarea}
-              placeholder="请输入驳回原因"
+              placeholder="请输入驳回原因，驳回后将退回上一环节"
               value={rejectReason}
               onInput={(e) => setRejectReason(e.detail.value)}
               maxlength={200}
             />
             <View className={styles.modalActions}>
-              <View 
-                className={classnames(styles.modalBtn, styles.cancel)} 
+              <View
+                className={classnames(styles.modalBtn, styles.cancel)}
                 onClick={() => setShowRejectModal(false)}
               >
                 取消
               </View>
-              <View 
-                className={classnames(styles.modalBtn, styles.confirm)} 
+              <View
+                className={classnames(styles.modalBtn, styles.confirm)}
                 onClick={confirmReject}
               >
                 确认驳回

@@ -13,6 +13,7 @@ const statusMap: Record<string, { text: string; className: string }> = {
   approved: { text: '已通过', className: styles.approved },
   rejected: { text: '已驳回', className: styles.rejected },
   confirmed: { text: '已确认', className: styles.confirmed },
+  executing: { text: '执行中', className: styles.executing },
   completed: { text: '已完成', className: styles.completed },
   cancelled: { text: '已取消', className: styles.cancelled },
   pending_approval: { text: '待审批', className: styles.pendingApproval },

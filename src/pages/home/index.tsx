@@ -18,6 +18,9 @@ const HomePage: React.FC = () => {
     const pendingApproval = appointments.filter(
       apt => apt.status === 'pending_approval'
     );
+    const executing = appointments.filter(
+      apt => apt.status === 'executing'
+    );
     const completedToday = appointments.filter(
       apt => apt.date === today && apt.status === 'completed'
     );
@@ -25,6 +28,7 @@ const HomePage: React.FC = () => {
     return {
       todayAppointments: todayAppointments.length,
       pendingApproval: pendingApproval.length,
+      executing: executing.length,
       completedToday: completedToday.length,
       totalRooms: rooms.filter(r => r.status === 'active').length
     };
@@ -96,14 +100,14 @@ const HomePage: React.FC = () => {
             variant="warning" 
           />
           <StatCard 
+            value={stats.executing} 
+            label="执行中" 
+            variant="primary" 
+          />
+          <StatCard 
             value={stats.completedToday} 
             label="今日完成" 
             variant="success" 
-          />
-          <StatCard 
-            value={stats.totalRooms} 
-            label="可用操作室" 
-            variant="primary" 
           />
         </View>
       </View>

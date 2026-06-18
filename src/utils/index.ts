@@ -102,6 +102,7 @@ export const getStatusText = (status: string): string => {
     approved: '已通过',
     rejected: '已驳回',
     confirmed: '已确认',
+    executing: '执行中',
     completed: '已完成',
     cancelled: '已取消'
   };
@@ -114,6 +115,7 @@ export const getStatusColor = (status: string): string => {
     approved: '#52c41a',
     rejected: '#ff4d4f',
     confirmed: '#1890ff',
+    executing: '#722ed1',
     completed: '#52c41a',
     cancelled: '#86909c'
   };

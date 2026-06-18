@@ -44,6 +44,7 @@ export type AppointmentStatus =
   | 'approved'
   | 'rejected'
   | 'confirmed'
+  | 'executing'
   | 'completed'
   | 'cancelled';
 

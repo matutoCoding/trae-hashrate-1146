@@ -7,8 +7,13 @@ import {
   cancelAppointment,
   approveAppointment,
   rejectAppointment,
+  resubmitAppointment,
+  savePreOpAssessment,
+  startExecution,
+  completeAppointment,
   checkTimeConflict,
-  getAppointmentById
+  getAppointmentById,
+  isMyApprovalTurn
 } from '@/store/appStore';
 
 function App(props) {
@@ -32,8 +37,13 @@ function App(props) {
     cancelAppointment,
     approveAppointment,
     rejectAppointment,
+    resubmitAppointment,
+    savePreOpAssessment,
+    startExecution,
+    completeAppointment,
     checkTimeConflict,
-    getAppointmentById
+    getAppointmentById,
+    isMyApprovalTurn
   }), [state]);
 
   return (
