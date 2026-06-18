@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Appointment, OperatingRoom, Project, User, PreOpAssessment, ApprovalNodeType, UserRole } from '@/types';
+import { Appointment, OperatingRoom, Project, User, PreOpAssessment, ApprovalNodeType, UserRole, OperationLog, ExecutionInfo, OperationType } from '@/types';
 import { mockAppointments } from '@/data/appointments';
 import { mockRooms } from '@/data/rooms';
 import { mockProjects } from '@/data/projects';
@@ -14,17 +14,18 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-  createAppointment: (appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'approvalNodes' | 'currentApprovalIndex'>) => Appointment;
+  createAppointment: (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'approvalNodes' | 'currentApprovalIndex' | 'operationLogs'>) => Appointment;
   cancelAppointment: (id: string, reason?: string) => boolean;
   approveAppointment: (id: string, comment?: string) => boolean;
   rejectAppointment: (id: string, comment: string) => boolean;
   resubmitAppointment: (id: string, comment?: string) => boolean;
   savePreOpAssessment: (id: string, assessment: PreOpAssessment, doctorSignature: string) => boolean;
-  startExecution: (id: string) => boolean;
-  completeAppointment: (id: string) => boolean;
+  startExecution: (id: string, executionNotes?: string) => boolean;
+  completeAppointment: (id: string, completionNotes?: string) => boolean;
   checkTimeConflict: (roomId: string, date: string, startTime: string, endTime: string, excludeId?: string) => boolean;
   getAppointmentById: (id: string) => Appointment | undefined;
   isMyApprovalTurn: (appointment: Appointment) => boolean;
+  switchRole: (role: UserRole, name?: string) => boolean;
 }
 
 const initialState: AppState = {
@@ -59,6 +60,33 @@ const nodeTypeToRole: Record<ApprovalNodeType, UserRole> = {
   director: 'director'
 };
 
+const roleToName: Record<UserRole, string> = {
+  customer: '顾客',
+  consultant: '李咨询师',
+  doctor: '王医生',
+  director: '张院长',
+  admin: '系统管理员'
+};
+
+const addOperationLog = (
+  appointment: Appointment,
+  type: OperationType,
+  comment?: string,
+  details?: string
+): OperationLog[] => {
+  const log: OperationLog = {
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type,
+    operatorName: state.currentUser.name,
+    operatorId: state.currentUser.id,
+    operatorRole: state.currentUser.role,
+    operatedAt: new Date().toISOString(),
+    comment,
+    details
+  };
+  return [...(appointment.operationLogs || []), log];
+};
+
 export const isMyApprovalTurn = (appointment: Appointment): boolean => {
   if (appointment.status !== 'pending_approval') return false;
   const currentNode = appointment.approvalNodes[appointment.currentApprovalIndex];
@@ -66,7 +94,27 @@ export const isMyApprovalTurn = (appointment: Appointment): boolean => {
   return nodeTypeToRole[currentNode.type] === state.currentUser.role || state.currentUser.role === 'admin';
 };
 
-export const createAppointment = (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'approvalNodes' | 'currentApprovalIndex'>): Appointment => {
+export const switchRole = (role: UserRole, name?: string): boolean => {
+  const validRoles: UserRole[] = ['consultant', 'doctor', 'director', 'admin'];
+  if (!validRoles.includes(role)) return false;
+
+  const newUser: User = {
+    ...state.currentUser,
+    role,
+    name: name || roleToName[role] || state.currentUser.name
+  };
+
+  state = {
+    ...state,
+    currentUser: newUser
+  };
+
+  notify();
+  console.log('[User] 切换角色:', role, '用户:', newUser.name);
+  return true;
+};
+
+export const createAppointment = (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'approvalNodes' | 'currentApprovalIndex' | 'operationLogs'>): Appointment => {
   const hasConflict = checkTimeConflict(
     appointmentData.roomId,
     appointmentData.date,
@@ -94,8 +142,11 @@ export const createAppointment = (appointmentData: Omit<Appointment, 'id' | 'cre
     currentApprovalIndex: requiresApproval ? 0 : 1,
     status: requiresApproval ? 'pending_approval' : 'approved',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    operationLogs: []
   };
+
+  newAppointment.operationLogs = addOperationLog(newAppointment, 'create', '创建预约');
 
   state = {
     ...state,
@@ -120,7 +171,8 @@ export const cancelAppointment = (id: string, reason?: string): boolean => {
     ...appointment,
     status: 'cancelled',
     notes: reason ? `${appointment.notes || ''}\n取消原因：${reason}`.trim() : appointment.notes,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(appointment, 'cancel', reason, '取消预约')
   };
 
   const newAppointments = [...state.appointments];
@@ -177,7 +229,13 @@ export const approveAppointment = (id: string, comment?: string): boolean => {
     approvalNodes: newApprovalNodes,
     currentApprovalIndex: nextIndex,
     status: allApproved ? 'approved' : 'pending_approval',
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'approve',
+      comment || '同意',
+      `${currentNode.name} - 审批通过`
+    )
   };
 
   if (currentApprovalIndex === 0) {
@@ -253,7 +311,13 @@ export const rejectAppointment = (id: string, comment: string): boolean => {
     approvalNodes: newApprovalNodes,
     currentApprovalIndex: backToIndex,
     status: 'pending_approval',
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'reject',
+      comment,
+      `${currentNode.name} - 驳回，退回上一环节`
+    )
   };
 
   const newAppointments = [...state.appointments];
@@ -323,7 +387,13 @@ export const resubmitAppointment = (id: string, comment?: string): boolean => {
     approvalNodes: newApprovalNodes,
     currentApprovalIndex: nextIndex,
     status: allApproved ? 'approved' : 'pending_approval',
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'resubmit',
+      comment || '补充资料后重新提交',
+      `${currentNode.name} - 重新提交审批`
+    )
   };
 
   const newAppointments = [...state.appointments];
@@ -361,7 +431,7 @@ export const savePreOpAssessment = (id: string, assessment: PreOpAssessment, doc
   return true;
 };
 
-export const startExecution = (id: string): boolean => {
+export const startExecution = (id: string, executionNotes?: string): boolean => {
   const index = state.appointments.findIndex(apt => apt.id === id);
   if (index === -1) return false;
 
@@ -370,10 +440,25 @@ export const startExecution = (id: string): boolean => {
     return false;
   }
 
+  const executionInfo: ExecutionInfo = {
+    ...appointment.executionInfo,
+    startTime: new Date().toISOString(),
+    executingDoctor: state.currentUser.name,
+    executingDoctorId: state.currentUser.id,
+    executionNotes
+  };
+
   const updatedAppointment: Appointment = {
     ...appointment,
     status: 'executing',
-    updatedAt: new Date().toISOString()
+    executionInfo,
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'start_execution',
+      executionNotes,
+      `开始执行 - 执行医生：${state.currentUser.name}`
+    )
   };
 
   const newAppointments = [...state.appointments];
@@ -385,7 +470,7 @@ export const startExecution = (id: string): boolean => {
   return true;
 };
 
-export const completeAppointment = (id: string): boolean => {
+export const completeAppointment = (id: string, completionNotes?: string): boolean => {
   const index = state.appointments.findIndex(apt => apt.id === id);
   if (index === -1) return false;
 
@@ -394,10 +479,23 @@ export const completeAppointment = (id: string): boolean => {
     return false;
   }
 
+  const executionInfo: ExecutionInfo = {
+    ...appointment.executionInfo,
+    endTime: new Date().toISOString(),
+    completionNotes
+  };
+
   const updatedAppointment: Appointment = {
     ...appointment,
     status: 'completed',
-    updatedAt: new Date().toISOString()
+    executionInfo,
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'complete',
+      completionNotes,
+      `执行完成 - 完成说明：${completionNotes || '无'}`
+    )
   };
 
   const newAppointments = [...state.appointments];

@@ -70,6 +70,8 @@ export interface Appointment {
   createdAt: string;
   updatedAt: string;
   preOpAssessment?: PreOpAssessment;
+  executionInfo?: ExecutionInfo;
+  operationLogs: OperationLog[];
 }
 
 // 术前评估
@@ -84,6 +86,38 @@ export interface PreOpAssessment {
   doctorSignature?: string;
   patientSignature?: string;
   assessmentDate?: string;
+}
+
+// 执行信息
+export interface ExecutionInfo {
+  startTime?: string;
+  endTime?: string;
+  executingDoctor?: string;
+  executingDoctorId?: string;
+  executionNotes?: string;
+  completionNotes?: string;
+}
+
+// 操作类型
+export type OperationType =
+  | 'create'
+  | 'approve'
+  | 'reject'
+  | 'resubmit'
+  | 'start_execution'
+  | 'complete'
+  | 'cancel';
+
+// 操作日志
+export interface OperationLog {
+  id: string;
+  type: OperationType;
+  operatorName: string;
+  operatorId?: string;
+  operatorRole?: string;
+  operatedAt: string;
+  comment?: string;
+  details?: string;
 }
 
 // 用户角色

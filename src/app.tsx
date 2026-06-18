@@ -13,7 +13,8 @@ import {
   completeAppointment,
   checkTimeConflict,
   getAppointmentById,
-  isMyApprovalTurn
+  isMyApprovalTurn,
+  switchRole
 } from '@/store/appStore';
 
 function App(props) {
