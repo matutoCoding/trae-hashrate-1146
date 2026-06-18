@@ -14,7 +14,17 @@ import {
   checkTimeConflict,
   getAppointmentById,
   isMyApprovalTurn,
-  switchRole
+  switchRole,
+  createFollowUpPlan,
+  completeFollowUp,
+  getTodayFollowUpPlans,
+  getMyFollowUpPlans,
+  checkPreOpAssessmentComplete,
+  canApproveDoctorNode,
+  getProjectStats,
+  getDoctorStats,
+  getRoomStats,
+  getDashboardOverview
 } from '@/store/appStore';
 
 function App(props) {
@@ -45,7 +55,17 @@ function App(props) {
     checkTimeConflict,
     getAppointmentById,
     isMyApprovalTurn,
-    switchRole
+    switchRole,
+    createFollowUpPlan,
+    completeFollowUp,
+    getTodayFollowUpPlans,
+    getMyFollowUpPlans,
+    checkPreOpAssessmentComplete,
+    canApproveDoctorNode,
+    getProjectStats,
+    getDoctorStats,
+    getRoomStats,
+    getDashboardOverview
   }), [state]);
 
   return (

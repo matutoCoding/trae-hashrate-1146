@@ -5,11 +5,20 @@ import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
 import StatCard from '@/components/StatCard';
 import AppointmentCard from '@/components/AppointmentCard';
-import { formatDate } from '@/utils';
 
 const HomePage: React.FC = () => {
-  const { appointments, currentUser, rooms } = useAppStore();
-  const today = formatDate(new Date());
+  const { appointments, rooms, currentUser, getTodayFollowUpPlans } = useAppStore();
+
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  const todayFollowUpList = useMemo(() => getTodayFollowUpPlans(), [getTodayFollowUpPlans]);
+
+  const todayPendingFollowUps = useMemo(() => {
+    return todayFollowUpList.filter(f => f.status === 'pending').length;
+  }, [todayFollowUpList]);
 
   const stats = useMemo(() => {
     const todayAppointments = appointments.filter(
@@ -30,9 +39,9 @@ const HomePage: React.FC = () => {
       pendingApproval: pendingApproval.length,
       executing: executing.length,
       completedToday: completedToday.length,
-      totalRooms: rooms.filter(r => r.status === 'active').length
+      todayPendingFollowUps
     };
-  }, [appointments, rooms, today]);
+  }, [appointments, rooms, today, todayPendingFollowUps]);
 
   const todayAppointments = useMemo(() => {
     return appointments
@@ -100,6 +109,11 @@ const HomePage: React.FC = () => {
             variant="warning" 
           />
           <StatCard 
+            value={stats.todayPendingFollowUps} 
+            label="待回访" 
+            variant="warning" 
+          />
+          <StatCard 
             value={stats.executing} 
             label="执行中" 
             variant="primary" 
@@ -108,6 +122,11 @@ const HomePage: React.FC = () => {
             value={stats.completedToday} 
             label="今日完成" 
             variant="success" 
+          />
+          <StatCard 
+            value={rooms.filter(r => r.status === 'active').length} 
+            label="可用操作室" 
+            variant="primary" 
           />
         </View>
       </View>
@@ -132,6 +151,42 @@ const HomePage: React.FC = () => {
             <Text className={styles.actionLabel}>操作室</Text>
           </View>
         </View>
+      </View>
+
+      <View className={styles.appointmentSection}>
+        <View className={styles.sectionHeader}>
+          <Text className={styles.sectionTitle}>今日待回访</Text>
+          <Text className={styles.viewAll} onClick={() => Taro.switchTab({ url: '/pages/mine/index' })}>全部回访</Text>
+        </View>
+
+        {todayFollowUpList.length > 0 ? (
+          todayFollowUpList.map(follow => (
+            <View
+              key={follow.id}
+              className={styles.followUpCard}
+              onClick={() => Taro.navigateTo({ url: `/pages/appointment-detail/index?id=${follow.appointmentId}` })}
+            >
+              <View className={styles.followUpHeader}>
+                <Text className={styles.followUpCustomer}>{follow.appointment?.customerName || '顾客'}</Text>
+                <Text className={`${styles.followUpBadge} ${follow.status === 'pending' ? styles.pending : styles.done}`}>
+                  {follow.status === 'pending' ? '待处理' : '已完成'}
+                </Text>
+              </View>
+              <View className={styles.followUpInfo}>
+                <Text>📋 {follow.appointment?.projectName}</Text>
+                {follow.plannedTime && <Text>⏰ {follow.plannedTime}</Text>}
+              </View>
+              {follow.notes && (
+                <View className={styles.followUpNotes}>备注：{follow.notes}</View>
+              )}
+            </View>
+          ))
+        ) : (
+          <View className={styles.emptyState}>
+            <Text className={styles.emptyIcon}>✅</Text>
+            <Text className={styles.emptyText}>今日暂无回访计划</Text>
+          </View>
+        )}
       </View>
 
       <View className={styles.appointmentSection}>

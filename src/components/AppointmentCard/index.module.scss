@@ -57,6 +57,27 @@
   @include text-ellipsis;
 }
 
+.infoNotesRow {
+  margin-bottom: $spacing-sm;
+}
+
+.infoNotesLabel {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-bottom: 6rpx;
+  display: block;
+}
+
+.infoNotesValue {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  padding: $spacing-sm;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+  line-height: 1.6;
+  display: block;
+}
+
 .cardFooter {
   display: flex;
   align-items: center;

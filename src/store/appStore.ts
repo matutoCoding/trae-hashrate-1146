@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Appointment, OperatingRoom, Project, User, PreOpAssessment, ApprovalNodeType, UserRole, OperationLog, ExecutionInfo, OperationType } from '@/types';
+import { Appointment, OperatingRoom, Project, User, PreOpAssessment, ApprovalNodeType, UserRole, OperationLog, ExecutionInfo, OperationType, FollowUpPlan, FollowUpRecord, FollowUpStatus, FollowUpResult, ProjectStats, DoctorStats, RoomStats, DashboardOverview, DateRange } from '@/types';
 import { mockAppointments } from '@/data/appointments';
 import { mockRooms } from '@/data/rooms';
 import { mockProjects } from '@/data/projects';
@@ -26,6 +26,16 @@ interface AppContextType extends AppState {
   getAppointmentById: (id: string) => Appointment | undefined;
   isMyApprovalTurn: (appointment: Appointment) => boolean;
   switchRole: (role: UserRole, name?: string) => boolean;
+  createFollowUpPlan: (appointmentId: string, plannedDate: string, plannedTime?: string) => boolean;
+  completeFollowUp: (planId: string, appointmentId: string, result: FollowUpResult, feedback: string, notes?: string, nextFollowUpDate?: string) => boolean;
+  getTodayFollowUpPlans: () => (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[];
+  getMyFollowUpPlans: () => (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[];
+  checkPreOpAssessmentComplete: (assessment: PreOpAssessment | undefined) => { ok: boolean; missing?: string };
+  canApproveDoctorNode: (appointment: Appointment) => { ok: boolean; missing?: string };
+  getProjectStats: (range?: DateRange) => ProjectStats[];
+  getDoctorStats: (range?: DateRange) => DoctorStats[];
+  getRoomStats: (range?: DateRange) => RoomStats[];
+  getDashboardOverview: (range?: DateRange) => DashboardOverview;
 }
 
 const initialState: AppState = {
@@ -528,6 +538,335 @@ export const checkTimeConflict = (
 
 export const getAppointmentById = (id: string): Appointment | undefined => {
   return state.appointments.find(apt => apt.id === id);
+};
+
+export const checkPreOpAssessmentComplete = (assessment: PreOpAssessment | undefined): { ok: boolean; missing?: string } => {
+  if (!assessment) return { ok: false, missing: '尚未填写术前评估' };
+  if (!assessment.medicalHistory || assessment.medicalHistory.trim().length === 0) return { ok: false, missing: '请填写既往病史' };
+  if (!assessment.allergyHistory || assessment.allergyHistory.trim().length === 0) return { ok: false, missing: '请填写过敏史' };
+  if (!assessment.currentMedication || assessment.currentMedication.trim().length === 0) return { ok: false, missing: '请填写当前用药情况' };
+  if (!assessment.physicalExamination || assessment.physicalExamination.trim().length === 0) return { ok: false, missing: '请填写体格检查' };
+  if (!assessment.riskAssessment || assessment.riskAssessment.trim().length === 0) return { ok: false, missing: '请填写风险评估' };
+  if (!assessment.informedConsent) return { ok: false, missing: '请勾选知情同意' };
+  if (!assessment.doctorSignature || assessment.doctorSignature.trim().length === 0) return { ok: false, missing: '请医生签字' };
+  return { ok: true };
+};
+
+export const canApproveDoctorNode = (appointment: Appointment): { ok: boolean; missing?: string } => {
+  if (appointment.status !== 'pending_approval') return { ok: false };
+  const currentNode = appointment.approvalNodes[appointment.currentApprovalIndex];
+  if (!currentNode || currentNode.type !== 'doctor') return { ok: true };
+  return checkPreOpAssessmentComplete(appointment.preOpAssessment);
+};
+
+export const createFollowUpPlan = (appointmentId: string, plannedDate: string, plannedTime?: string): boolean => {
+  const index = state.appointments.findIndex(apt => apt.id === appointmentId);
+  if (index === -1) return false;
+
+  const appointment = state.appointments[index];
+
+  const plan: FollowUpPlan = {
+    id: `fup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    appointmentId,
+    plannedDate,
+    plannedTime,
+    status: 'pending',
+    assignedTo: state.currentUser.name,
+    assignedToId: state.currentUser.id,
+    createdAt: new Date().toISOString()
+  };
+
+  const existingPlans = appointment.followUpPlans || [];
+  const newPlans = [...existingPlans, plan];
+
+  const updatedAppointment: Appointment = {
+    ...appointment,
+    followUpPlans: newPlans,
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'create_followup',
+      `回访日期：${plannedDate}${plannedTime ? ' ' + plannedTime : ''}`,
+      `创建回访计划`
+    )
+  };
+
+  const newAppointments = [...state.appointments];
+  newAppointments[index] = updatedAppointment;
+
+  state = { ...state, appointments: newAppointments };
+  notify();
+  console.log('[FollowUp] 创建回访计划:', plan.id, '预约:', appointmentId);
+  return true;
+};
+
+export const completeFollowUp = (
+  planId: string,
+  appointmentId: string,
+  result: FollowUpResult,
+  feedback: string,
+  notes?: string,
+  nextFollowUpDate?: string
+): boolean => {
+  const aptIndex = state.appointments.findIndex(apt => apt.id === appointmentId);
+  if (aptIndex === -1) return false;
+
+  const appointment = state.appointments[aptIndex];
+  const existingPlans = appointment.followUpPlans || [];
+  const planIdx = existingPlans.findIndex(p => p.id === planId);
+  if (planIdx === -1) return false;
+
+  const newPlans = existingPlans.map((p, i) =>
+    i === planIdx ? { ...p, status: 'done' as FollowUpStatus } : p
+  );
+
+  const record: FollowUpRecord = {
+    id: `fur-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    planId,
+    appointmentId,
+    result,
+    customerFeedback: feedback,
+    handledBy: state.currentUser.name,
+    handledById: state.currentUser.id,
+    handledAt: new Date().toISOString(),
+    nextFollowUpDate,
+    notes
+  };
+
+  if (nextFollowUpDate) {
+    const nextPlan: FollowUpPlan = {
+      id: `fup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      appointmentId,
+      plannedDate: nextFollowUpDate,
+      status: 'pending',
+      assignedTo: state.currentUser.name,
+      assignedToId: state.currentUser.id,
+      createdAt: new Date().toISOString()
+    };
+    newPlans.push(nextPlan);
+  }
+
+  const existingRecords = appointment.followUpRecords || [];
+  const newRecords = [...existingRecords, record];
+
+  const resultText: Record<FollowUpResult, string> = {
+    satisfied: '满意',
+    normal: '一般',
+    complain: '投诉',
+    serious: '严重'
+  };
+
+  const updatedAppointment: Appointment = {
+    ...appointment,
+    followUpPlans: newPlans,
+    followUpRecords: newRecords,
+    updatedAt: new Date().toISOString(),
+    operationLogs: addOperationLog(
+      appointment,
+      'complete_followup',
+      `结果：${resultText[result]}，反馈：${feedback || '无'}`,
+      `完成回访处理`
+    )
+  };
+
+  const newAppointments = [...state.appointments];
+  newAppointments[aptIndex] = updatedAppointment;
+
+  state = { ...state, appointments: newAppointments };
+  notify();
+  console.log('[FollowUp] 完成回访:', record.id, '计划:', planId);
+  return true;
+};
+
+const getTodayStr = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const getTodayFollowUpPlans = (): (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[] => {
+  const today = getTodayStr();
+  const results: (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[] = [];
+
+  state.appointments.forEach(apt => {
+    const plans = apt.followUpPlans || [];
+    const records = apt.followUpRecords || [];
+    plans.forEach(plan => {
+      if (plan.plannedDate === today) {
+        const record = records.find(r => r.planId === plan.id);
+        results.push({ ...plan, appointment: apt, record });
+      }
+    });
+  });
+
+  return results.sort((a, b) => a.status === 'pending' ? -1 : 1);
+};
+
+export const getMyFollowUpPlans = (): (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[] => {
+  const results: (FollowUpPlan & { appointment?: Appointment; record?: FollowUpRecord })[] = [];
+
+  state.appointments.forEach(apt => {
+    const plans = apt.followUpPlans || [];
+    const records = apt.followUpRecords || [];
+    plans.forEach(plan => {
+      if (plan.assignedToId === state.currentUser.id || plan.assignedTo === state.currentUser.name) {
+        const record = records.find(r => r.planId === plan.id);
+        results.push({ ...plan, appointment: apt, record });
+      }
+    });
+  });
+
+  return results.sort((a, b) => a.status === 'pending' ? -1 : 1);
+};
+
+const isInDateRange = (dateStr: string, range?: DateRange): boolean => {
+  if (!range) return true;
+  const d = new Date(dateStr).getTime();
+  const start = new Date(range.startDate).getTime();
+  const end = new Date(range.endDate).getTime() + 86400000;
+  return d >= start && d < end;
+};
+
+export const getDashboardOverview = (range?: DateRange): DashboardOverview => {
+  const filtered = state.appointments.filter(apt => isInDateRange(apt.createdAt, range));
+
+  const totalCount = filtered.length;
+  const completedCount = filtered.filter(a => a.status === 'completed').length;
+  const cancelledCount = filtered.filter(a => a.status === 'cancelled').length;
+  const pendingCount = filtered.filter(a =>
+    a.status === 'pending_approval' || a.status === 'approved' || a.status === 'executing' || a.status === 'confirmed'
+  ).length;
+
+  let totalRevenue = 0;
+  filtered.forEach(apt => {
+    if (apt.status === 'completed' || apt.status === 'executing' || apt.status === 'approved') {
+      const project = state.projects.find(p => p.id === apt.projectId);
+      if (project) totalRevenue += project.price;
+    }
+  });
+
+  const completedWithRevenue = filtered.filter(a =>
+    a.status === 'completed' || a.status === 'executing' || a.status === 'approved'
+  ).length;
+
+  return {
+    totalAppointments: totalCount,
+    completedCount,
+    cancelledCount,
+    pendingCount,
+    totalRevenue,
+    avgRevenue: completedWithRevenue > 0 ? Math.round(totalRevenue / completedWithRevenue) : 0,
+    completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+    cancelRate: totalCount > 0 ? Math.round((cancelledCount / totalCount) * 100) : 0
+  };
+};
+
+export const getProjectStats = (range?: DateRange): ProjectStats[] => {
+  const projectMap = new Map<string, ProjectStats>();
+
+  state.projects.forEach(p => {
+    projectMap.set(p.id, {
+      projectId: p.id,
+      projectName: p.name,
+      totalCount: 0,
+      completedCount: 0,
+      cancelledCount: 0,
+      revenue: 0
+    });
+  });
+
+  state.appointments
+    .filter(apt => isInDateRange(apt.createdAt, range))
+    .forEach(apt => {
+      const stat = projectMap.get(apt.projectId);
+      if (!stat) return;
+      stat.totalCount++;
+      if (apt.status === 'completed') stat.completedCount++;
+      if (apt.status === 'cancelled') stat.cancelledCount++;
+      if (apt.status === 'completed' || apt.status === 'executing' || apt.status === 'approved') {
+        const project = state.projects.find(p => p.id === apt.projectId);
+        if (project) stat.revenue += project.price;
+      }
+    });
+
+  return Array.from(projectMap.values())
+    .filter(s => s.totalCount > 0)
+    .sort((a, b) => b.revenue - a.revenue);
+};
+
+export const getDoctorStats = (range?: DateRange): DoctorStats[] => {
+  const doctorMap = new Map<string, DoctorStats>();
+
+  state.appointments
+    .filter(apt => isInDateRange(apt.createdAt, range))
+    .forEach(apt => {
+      const doctorName = apt.doctorName || apt.executionInfo?.executingDoctor || '未指派';
+      if (!doctorMap.has(doctorName)) {
+        doctorMap.set(doctorName, {
+          doctorName,
+          totalCount: 0,
+          completedCount: 0,
+          cancelledCount: 0,
+          revenue: 0
+        });
+      }
+      const stat = doctorMap.get(doctorName)!;
+      stat.totalCount++;
+      if (apt.status === 'completed') stat.completedCount++;
+      if (apt.status === 'cancelled') stat.cancelledCount++;
+      if (apt.status === 'completed' || apt.status === 'executing' || apt.status === 'approved') {
+        const project = state.projects.find(p => p.id === apt.projectId);
+        if (project) stat.revenue += project.price;
+      }
+    });
+
+  return Array.from(doctorMap.values())
+    .filter(s => s.totalCount > 0)
+    .sort((a, b) => b.revenue - a.revenue);
+};
+
+export const getRoomStats = (range?: DateRange): RoomStats[] => {
+  const roomMap = new Map<string, { total: number; completed: number; hours: number }>();
+
+  state.rooms.forEach(r => {
+    roomMap.set(r.id, { total: 0, completed: 0, hours: 0 });
+  });
+
+  const timeToMinutes = (t: string): number => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  state.appointments
+    .filter(apt => isInDateRange(apt.createdAt, range))
+    .forEach(apt => {
+      const stat = roomMap.get(apt.roomId);
+      if (!stat) return;
+      stat.total++;
+      if (apt.status === 'completed') stat.completed++;
+      const duration = timeToMinutes(apt.endTime) - timeToMinutes(apt.startTime);
+      stat.hours += Math.max(duration, 0);
+    });
+
+  const totalDays = range ? (new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / 86400000 + 1 : 30;
+  const roomMinutesPerDay = 9 * 60;
+  const totalRoomMinutes = totalDays * roomMinutesPerDay;
+
+  return state.rooms
+    .filter(r => r.status === 'active')
+    .map(r => {
+      const s = roomMap.get(r.id) || { total: 0, completed: 0, hours: 0 };
+      return {
+        roomId: r.id,
+        roomName: r.name,
+        totalCount: s.total,
+        completedCount: s.completed,
+        utilizationRate: totalRoomMinutes > 0 ? Math.round((s.hours / totalRoomMinutes) * 100) : 0
+      };
+    })
+    .sort((a, b) => b.utilizationRate - a.utilizationRate);
 };
 
 export const AppContext = createContext<AppContextType | null>(null);

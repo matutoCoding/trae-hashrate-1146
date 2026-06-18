@@ -6,7 +6,7 @@ import { useAppStore } from '@/store/appStore';
 import StatusTag from '@/components/StatusTag';
 import ApprovalFlow from '@/components/ApprovalFlow';
 import classnames from 'classnames';
-import type { Appointment, OperationType } from '@/types';
+import type { Appointment, OperationType, FollowUpResult, FollowUpRecord, FollowUpPlan } from '@/types';
 
 const operationTypeLabel: Record<OperationType, string> = {
   create: '创建预约',
@@ -15,7 +15,9 @@ const operationTypeLabel: Record<OperationType, string> = {
   resubmit: '重新提交',
   start_execution: '开始执行',
   complete: '标记完成',
-  cancel: '取消预约'
+  cancel: '取消预约',
+  create_followup: '创建回访',
+  complete_followup: '完成回访'
 };
 
 const operationTypeIcon: Record<OperationType, string> = {
@@ -25,7 +27,9 @@ const operationTypeIcon: Record<OperationType, string> = {
   resubmit: '🔄',
   start_execution: '▶️',
   complete: '🎉',
-  cancel: '🚫'
+  cancel: '🚫',
+  create_followup: '📞',
+  complete_followup: '✓'
 };
 
 const operationTypeColor: Record<OperationType, string> = {
@@ -35,7 +39,31 @@ const operationTypeColor: Record<OperationType, string> = {
   resubmit: '#faad14',
   start_execution: '#722ed1',
   complete: '#52c41a',
-  cancel: '#86909c'
+  cancel: '#86909c',
+  create_followup: '#13c2c2',
+  complete_followup: '#52c41a'
+};
+
+const followUpResultLabel: Record<FollowUpResult, string> = {
+  satisfied: '😀 满意',
+  normal: '😐 一般',
+  complain: '😠 投诉',
+  serious: '🚨 严重'
+};
+
+const followUpResultColor: Record<FollowUpResult, string> = {
+  satisfied: '#52c41a',
+  normal: '#faad14',
+  complain: '#fa541c',
+  serious: '#ff4d4f'
+};
+
+const getTodayStr = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 };
 
 const AppointmentDetailPage: React.FC = () => {
@@ -47,13 +75,27 @@ const AppointmentDetailPage: React.FC = () => {
     completeAppointment,
     resubmitAppointment,
     currentUser,
-    isMyApprovalTurn
+    isMyApprovalTurn,
+    createFollowUpPlan,
+    completeFollowUp
   } = useAppStore();
+
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [executionNotes, setExecutionNotes] = useState('');
   const [completionNotes, setCompletionNotes] = useState('');
   const [showExecutionModal, setShowExecutionModal] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  const [showCreateFollowUpModal, setShowCreateFollowUpModal] = useState(false);
+  const [followUpDate, setFollowUpDate] = useState('');
+  const [followUpTime, setFollowUpTime] = useState('');
+
+  const [showCompleteFollowUpModal, setShowCompleteFollowUpModal] = useState(false);
+  const [currentPlanId, setCurrentPlanId] = useState('');
+  const [followUpResult, setFollowUpResult] = useState<FollowUpResult>('satisfied');
+  const [feedback, setFeedback] = useState('');
+  const [followUpNotes, setFollowUpNotes] = useState('');
+  const [nextFollowUpDate, setNextFollowUpDate] = useState('');
 
   useEffect(() => {
     const id = router.params.id;
@@ -75,7 +117,6 @@ const AppointmentDetailPage: React.FC = () => {
 
   const handleCancel = () => {
     if (!appointment) return;
-
     Taro.showModal({
       title: '确认取消',
       content: '确定要取消这个预约吗？取消后该时段将立即释放。',
@@ -95,14 +136,11 @@ const AppointmentDetailPage: React.FC = () => {
 
   const handleApproval = () => {
     if (!appointment) return;
-    Taro.navigateTo({
-      url: `/pages/approval-detail/index?id=${appointment.id}`
-    });
+    Taro.navigateTo({ url: `/pages/approval-detail/index?id=${appointment.id}` });
   };
 
   const handleResubmit = () => {
     if (!appointment) return;
-
     Taro.showModal({
       title: '确认重新提交',
       content: '补充资料后重新提交审批？',
@@ -146,6 +184,64 @@ const AppointmentDetailPage: React.FC = () => {
     }
   };
 
+  const openCreateFollowUp = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setFollowUpDate(`${y}-${m}-${day}`);
+    setFollowUpTime('10:00');
+    setShowCreateFollowUpModal(true);
+  };
+
+  const confirmCreateFollowUp = () => {
+    if (!appointment || !followUpDate) {
+      Taro.showToast({ title: '请选择回访日期', icon: 'none' });
+      return;
+    }
+    const ok = createFollowUpPlan(appointment.id, followUpDate, followUpTime || undefined);
+    if (ok) {
+      Taro.showToast({ title: '回访计划已创建', icon: 'success' });
+      refreshAppointment();
+      setShowCreateFollowUpModal(false);
+    } else {
+      Taro.showToast({ title: '创建失败', icon: 'none' });
+    }
+  };
+
+  const openCompleteFollowUp = (planId: string) => {
+    setCurrentPlanId(planId);
+    setFollowUpResult('satisfied');
+    setFeedback('');
+    setFollowUpNotes('');
+    setNextFollowUpDate('');
+    setShowCompleteFollowUpModal(true);
+  };
+
+  const confirmCompleteFollowUp = () => {
+    if (!appointment || !currentPlanId) return;
+    if (!feedback || feedback.trim().length === 0) {
+      Taro.showToast({ title: '请填写顾客反馈', icon: 'none' });
+      return;
+    }
+    const ok = completeFollowUp(
+      currentPlanId,
+      appointment.id,
+      followUpResult,
+      feedback,
+      followUpNotes || undefined,
+      nextFollowUpDate || undefined
+    );
+    if (ok) {
+      Taro.showToast({ title: '回访处理完成', icon: 'success' });
+      refreshAppointment();
+      setShowCompleteFollowUpModal(false);
+    } else {
+      Taro.showToast({ title: '操作失败', icon: 'none' });
+    }
+  };
+
   if (!appointment) {
     return (
       <View style={{ padding: 100, textAlign: 'center', color: '#86909c' }}>
@@ -154,14 +250,21 @@ const AppointmentDetailPage: React.FC = () => {
     );
   }
 
-  const canCancel = appointment.status !== 'cancelled' &&
-    appointment.status !== 'completed';
-
+  const canCancel = appointment.status !== 'cancelled' && appointment.status !== 'completed';
   const canResubmit = appointment.status === 'pending_approval' && isMyApprovalTurn(appointment);
   const wasRejected = appointment.approvalNodes.some(n => n.status === 'rejected');
-
   const currentApprovalNode = appointment.approvalNodes[appointment.currentApprovalIndex];
   const approvalNodeName = currentApprovalNode?.name || '已完成';
+  const canCreateFollowUp = appointment.status === 'completed' || appointment.status === 'executing';
+
+  const pendingFollowUpPlans: FollowUpPlan[] = [];
+  const doneFollowUpPlans: FollowUpPlan[] = [];
+  (appointment.followUpPlans || []).forEach(p => {
+    if (p.status === 'pending') pendingFollowUpPlans.push(p);
+    else doneFollowUpPlans.push(p);
+  });
+  const recordMap = new Map<string, FollowUpRecord>();
+  (appointment.followUpRecords || []).forEach(r => recordMap.set(r.planId, r));
 
   return (
     <ScrollView className={styles.detailPage} scrollY>
@@ -284,7 +387,11 @@ const AppointmentDetailPage: React.FC = () => {
             </View>
             <View className={styles.infoItem}>
               <Text className={styles.infoLabel}>评估日期</Text>
-              <Text className={styles.infoContent}>{appointment.preOpAssessment.assessmentDate ? new Date(appointment.preOpAssessment.assessmentDate).toLocaleString('zh-CN') : '无'}</Text>
+              <Text className={styles.infoContent}>
+                {appointment.preOpAssessment.assessmentDate
+                  ? new Date(appointment.preOpAssessment.assessmentDate).toLocaleString('zh-CN')
+                  : '无'}
+              </Text>
             </View>
           </View>
         </View>
@@ -331,6 +438,108 @@ const AppointmentDetailPage: React.FC = () => {
           </View>
         </View>
       )}
+
+      {(appointment.followUpPlans && appointment.followUpPlans.length > 0) || canCreateFollowUp ? (
+        <View className={styles.section}>
+          <View className={styles.sectionHeader}>
+            <Text className={styles.sectionTitle}>术后回访</Text>
+            {canCreateFollowUp && (
+              <Text
+                className={styles.linkBtn}
+                onClick={openCreateFollowUp}
+              >
+                + 创建回访计划
+              </Text>
+            )}
+          </View>
+
+          {pendingFollowUpPlans.length > 0 && (
+            <>
+              <View style={{ fontSize: 24, color: '#faad14', marginBottom: 12, marginTop: 8 }}>待回访</View>
+              {pendingFollowUpPlans.map(plan => {
+                const isToday = plan.plannedDate === getTodayStr();
+                const isOverdue = plan.plannedDate < getTodayStr();
+                return (
+                  <View
+                    key={plan.id}
+                    style={{
+                      padding: 16,
+                      background: isToday ? '#fffbe6' : isOverdue ? '#fff2f0' : '#f2f3f5',
+                      borderRadius: 8,
+                      marginBottom: 12
+                    }}
+                  >
+                    <View style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 28, fontWeight: 600 }}>
+                        📅 {plan.plannedDate} {plan.plannedTime || ''}
+                      </Text>
+                      <Text style={{ fontSize: 22, color: isToday ? '#faad14' : isOverdue ? '#ff4d4f' : '#86909c' }}>
+                        {isToday ? '今日' : isOverdue ? '逾期' : '待处理'}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 24, color: '#4e5969' }}>
+                      负责人：{plan.assignedTo || '未指派'}
+                    </Text>
+                    <View
+                      className={classnames(styles.btn, styles.btnPrimary)}
+                      style={{ marginTop: 12, width: 'auto', alignSelf: 'flex-start', padding: '8rpx 24rpx' }}
+                      onClick={() => openCompleteFollowUp(plan.id)}
+                    >
+                      处理回访
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          )}
+
+          {doneFollowUpPlans.length > 0 && (
+            <>
+              <View style={{ fontSize: 24, color: '#52c41a', marginBottom: 12, marginTop: 12 }}>已完成回访</View>
+              {doneFollowUpPlans.map(plan => {
+                const record = recordMap.get(plan.id);
+                return (
+                  <View
+                    key={plan.id}
+                    style={{
+                      padding: 16,
+                      background: '#f6ffed',
+                      borderRadius: 8,
+                      marginBottom: 12
+                    }}
+                  >
+                    <View style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 26, fontWeight: 600, color: '#52c41a' }}>
+                        ✓ {plan.plannedDate} {plan.plannedTime || ''}
+                      </Text>
+                      {record && (
+                        <Text style={{ fontSize: 24, color: followUpResultColor[record.result] }}>
+                          {followUpResultLabel[record.result]}
+                        </Text>
+                      )}
+                    </View>
+                    {record && (
+                      <>
+                        <Text style={{ fontSize: 24, color: '#4e5969' }}>
+                          反馈：{record.customerFeedback}
+                        </Text>
+                        <Text style={{ fontSize: 22, color: '#86909c', marginTop: 4 }}>
+                          处理人：{record.handledBy} · {new Date(record.handledAt).toLocaleString('zh-CN')}
+                        </Text>
+                        {record.notes && (
+                          <Text style={{ fontSize: 22, color: '#86909c', marginTop: 2 }}>
+                            备注：{record.notes}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </View>
+                );
+              })}
+            </>
+          )}
+        </View>
+      ) : null}
 
       {appointment.notes && (
         <View className={styles.notesSection}>
@@ -410,6 +619,15 @@ const AppointmentDetailPage: React.FC = () => {
             标记完成
           </View>
         )}
+        {appointment.status === 'completed' && (
+          <View
+            className={classnames(styles.btn, styles.btnOutline)}
+            style={{ flex: 1 }}
+            onClick={openCreateFollowUp}
+          >
+            创建回访
+          </View>
+        )}
       </View>
 
       {showExecutionModal && (
@@ -466,6 +684,118 @@ const AppointmentDetailPage: React.FC = () => {
                 onClick={confirmComplete}
               >
                 确认完成
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showCreateFollowUpModal && (
+        <View className={styles.modal} onClick={() => setShowCreateFollowUpModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>创建回访计划</Text>
+            <Text className={styles.modalDesc}>为该顾客安排术后回访</Text>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>回访日期</Text>
+              <input
+                type="date"
+                style={{ width: '100%', padding: 16, border: '1rpx solid #e5e6eb', borderRadius: 8, fontSize: 28 }}
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+              />
+            </View>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>回访时间</Text>
+              <input
+                type="time"
+                style={{ width: '100%', padding: 16, border: '1rpx solid #e5e6eb', borderRadius: 8, fontSize: 28 }}
+                value={followUpTime}
+                onChange={(e) => setFollowUpTime(e.target.value)}
+              />
+            </View>
+            <View className={styles.modalActions}>
+              <View
+                className={classnames(styles.modalBtn, styles.cancel)}
+                onClick={() => setShowCreateFollowUpModal(false)}
+              >
+                取消
+              </View>
+              <View
+                className={classnames(styles.modalBtn, styles.confirmGreen)}
+                onClick={confirmCreateFollowUp}
+              >
+                创建
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showCompleteFollowUpModal && (
+        <View className={styles.modal} onClick={() => setShowCompleteFollowUpModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>处理回访</Text>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>回访结果</Text>
+              <View style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                {(['satisfied', 'normal', 'complain', 'serious'] as FollowUpResult[]).map(r => (
+                  <Text
+                    key={r}
+                    onClick={() => setFollowUpResult(r)}
+                    style={{
+                      padding: '8rpx 20rpx',
+                      borderRadius: 48,
+                      fontSize: 26,
+                      background: followUpResult === r ? followUpResultColor[r] : '#f2f3f5',
+                      color: followUpResult === r ? '#fff' : '#4e5969'
+                    }}
+                  >
+                    {followUpResultLabel[r]}
+                  </Text>
+                ))}
+              </View>
+            </View>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>顾客反馈（必填）</Text>
+              <Textarea
+                className={styles.modalTextarea}
+                placeholder="请填写顾客的实际反馈"
+                value={feedback}
+                onInput={(e) => setFeedback(e.detail.value)}
+                maxlength={300}
+              />
+            </View>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>处理备注</Text>
+              <Textarea
+                className={styles.modalTextarea}
+                placeholder="请填写处理备注（可选）"
+                value={followUpNotes}
+                onInput={(e) => setFollowUpNotes(e.detail.value)}
+                maxlength={200}
+              />
+            </View>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 26, color: '#4e5969', marginBottom: 8, display: 'block' }}>下次回访日期（可选）</Text>
+              <input
+                type="date"
+                style={{ width: '100%', padding: 16, border: '1rpx solid #e5e6eb', borderRadius: 8, fontSize: 28 }}
+                value={nextFollowUpDate}
+                onChange={(e) => setNextFollowUpDate(e.target.value)}
+              />
+            </View>
+            <View className={styles.modalActions}>
+              <View
+                className={classnames(styles.modalBtn, styles.cancel)}
+                onClick={() => setShowCompleteFollowUpModal(false)}
+              >
+                取消
+              </View>
+              <View
+                className={classnames(styles.modalBtn, styles.confirmGreen)}
+                onClick={confirmCompleteFollowUp}
+              >
+                完成回访
               </View>
             </View>
           </View>

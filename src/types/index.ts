@@ -72,6 +72,54 @@ export interface Appointment {
   preOpAssessment?: PreOpAssessment;
   executionInfo?: ExecutionInfo;
   operationLogs: OperationLog[];
+  followUpPlans?: FollowUpPlan[];
+  followUpRecords?: FollowUpRecord[];
+}
+
+// 经营统计 - 按项目
+export interface ProjectStats {
+  projectId: string;
+  projectName: string;
+  totalCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  revenue: number;
+}
+
+// 经营统计 - 按医生
+export interface DoctorStats {
+  doctorName: string;
+  totalCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  revenue: number;
+}
+
+// 经营统计 - 按操作室
+export interface RoomStats {
+  roomId: string;
+  roomName: string;
+  totalCount: number;
+  completedCount: number;
+  utilizationRate: number;
+}
+
+// 日期范围
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+// 经营看板总览
+export interface DashboardOverview {
+  totalAppointments: number;
+  completedCount: number;
+  cancelledCount: number;
+  pendingCount: number;
+  totalRevenue: number;
+  avgRevenue: number;
+  completionRate: number;
+  cancelRate: number;
 }
 
 // 术前评估
@@ -98,6 +146,38 @@ export interface ExecutionInfo {
   completionNotes?: string;
 }
 
+// 回访状态
+export type FollowUpStatus = 'pending' | 'done' | 'missed';
+
+// 回访结果
+export type FollowUpResult = 'satisfied' | 'normal' | 'complain' | 'serious';
+
+// 回访计划
+export interface FollowUpPlan {
+  id: string;
+  appointmentId: string;
+  plannedDate: string;
+  plannedTime?: string;
+  status: FollowUpStatus;
+  assignedTo?: string;
+  assignedToId?: string;
+  createdAt: string;
+}
+
+// 回访记录
+export interface FollowUpRecord {
+  id: string;
+  planId: string;
+  appointmentId: string;
+  result: FollowUpResult;
+  customerFeedback: string;
+  handledBy: string;
+  handledById?: string;
+  handledAt: string;
+  nextFollowUpDate?: string;
+  notes?: string;
+}
+
 // 操作类型
 export type OperationType =
   | 'create'
@@ -106,7 +186,9 @@ export type OperationType =
   | 'resubmit'
   | 'start_execution'
   | 'complete'
-  | 'cancel';
+  | 'cancel'
+  | 'create_followup'
+  | 'complete_followup';
 
 // 操作日志
 export interface OperationLog {

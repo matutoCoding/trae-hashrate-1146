@@ -4,7 +4,7 @@ import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
 import classnames from 'classnames';
-import type { UserRole } from '@/types';
+import type { UserRole, DateRange, Appointment, FollowUpPlan, FollowUpRecord } from '@/types';
 
 const roleMap: Record<string, string> = {
   customer: '顾客',
@@ -15,12 +15,18 @@ const roleMap: Record<string, string> = {
 };
 
 const MinePage: React.FC = () => {
-  const { currentUser, appointments, isMyApprovalTurn, switchRole } = useAppStore();
+  const { currentUser, appointments, isMyApprovalTurn, switchRole, getMyFollowUpPlans, getTodayFollowUpPlans } = useAppStore();
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+  const [showFollowUpList, setShowFollowUpList] = useState(false);
 
   const myPendingCount = useMemo(() => {
     return appointments.filter(apt => isMyApprovalTurn(apt)).length;
   }, [appointments, isMyApprovalTurn]);
+
+  const todayFollowUps = useMemo(() => getTodayFollowUpPlans(), [getTodayFollowUpPlans]);
+  const myFollowUps = useMemo(() => getMyFollowUpPlans(), [getMyFollowUpPlans]);
+  const todayPendingFollowUps = useMemo(() => todayFollowUps.filter(f => f.status === 'pending').length, [todayFollowUps]);
+  const myPendingFollowUps = useMemo(() => myFollowUps.filter(f => f.status === 'pending').length, [myFollowUps]);
 
   const stats = useMemo(() => {
     const myAppointments = appointments.filter(
@@ -60,12 +66,15 @@ const MinePage: React.FC = () => {
       items: [
         { icon: '📅', title: '我的预约', desc: '查看我参与的预约', color: 'primary', badge: stats.total, path: '' },
         { icon: '✍️', title: '待我审批', desc: `等待处理（${myPendingCount}）`, color: 'warning', badge: myPendingCount, path: '/pages/approval/index' },
+        { icon: '📞', title: '今日回访', desc: `今日需回访（${todayPendingFollowUps}）`, color: 'primary', badge: todayPendingFollowUps, path: '__followup__' },
+        { icon: '☎️', title: '我的回访', desc: `共 ${myFollowUps.length} 条，待处理 ${myPendingFollowUps}`, color: 'success', badge: myPendingFollowUps, path: '__myfollowup__' },
         { icon: '✅', title: '已通过', desc: '我已审批通过的', color: 'success', badge: stats.approved, path: '' },
       ]
     },
     {
       title: '机构管理',
       items: [
+        { icon: '📊', title: '经营看板', desc: '预约/完成/收入趋势', color: 'primary', badge: 0, path: '/pages/dashboard/index', roles: ['director', 'admin'] },
         { icon: '🏥', title: '操作室管理', desc: '管理操作室资源', color: 'primary', badge: 0, path: '' },
         { icon: '💉', title: '项目管理', desc: '管理医美项目', color: 'success', badge: 0, path: '' },
         { icon: '👥', title: '人员管理', desc: '管理员工信息', color: 'warning', badge: 0, path: '' },
@@ -81,10 +90,24 @@ const MinePage: React.FC = () => {
     }
   ];
 
-  const handleMenuItemClick = (path: string) => {
+  const handleMenuItemClick = (path: string, item?: { roles?: string[] }) => {
+    if (item?.roles && item.roles.length > 0 && !item.roles.includes(currentUser.role)) {
+      Taro.showToast({ title: '仅院长/管理员可查看', icon: 'none' });
+      return;
+    }
+    if (path === '__followup__') {
+      setShowFollowUpList(true);
+      return;
+    }
+    if (path === '__myfollowup__') {
+      setShowFollowUpList(true);
+      return;
+    }
     if (path) {
       if (path.startsWith('/pages/approval')) {
         Taro.switchTab({ url: path });
+      } else if (path.startsWith('/pages/dashboard')) {
+        Taro.navigateTo({ url: path });
       } else {
         Taro.showToast({ title: '功能开发中', icon: 'none' });
       }
@@ -165,7 +188,7 @@ const MinePage: React.FC = () => {
               <View
                 key={itemIndex}
                 className={styles.menuItem}
-                onClick={() => handleMenuItemClick(item.path)}
+                onClick={() => handleMenuItemClick(item.path, item)}
               >
                 <View className={classnames(styles.menuIcon, styles[item.color])}>
                   {item.icon}
@@ -183,6 +206,66 @@ const MinePage: React.FC = () => {
           </View>
         ))}
       </View>
+
+      {showFollowUpList && (
+        <View className={styles.followUpModalOverlay} onClick={() => setShowFollowUpList(false)}>
+          <View className={styles.followUpModal} onClick={e => e.stopPropagation()}>
+            <View className={styles.followUpModalHeader}>
+              <Text className={styles.followUpModalTitle}>回访计划</Text>
+              <Text className={styles.followUpModalClose} onClick={() => setShowFollowUpList(false)}>×</Text>
+            </View>
+            <ScrollView scrollY className={styles.followUpModalScroll}>
+              {myFollowUps.length > 0 ? (
+                myFollowUps.map(follow => (
+                  <View
+                    key={follow.id}
+                    className={styles.followUpCard}
+                    onClick={() => {
+                      setShowFollowUpList(false);
+                      Taro.navigateTo({ url: `/pages/appointment-detail/index?id=${follow.appointmentId}` });
+                    }}
+                  >
+                    <View className={styles.followUpHeader}>
+                      <Text className={styles.followUpCustomer}>{follow.appointment?.customerName || '顾客'}</Text>
+                      <Text className={`${styles.followUpBadge} ${follow.status === 'pending' ? styles.pending : styles.done}`}>
+                        {follow.status === 'pending' ? '待处理' : '已完成'}
+                      </Text>
+                    </View>
+                    <View className={styles.followUpInfo}>
+                      <Text>📋 {follow.appointment?.projectName}</Text>
+                      <Text>📅 {follow.plannedDate}</Text>
+                    </View>
+                    {follow.plannedTime && (
+                      <View className={styles.followUpInfo}>
+                        <Text>⏰ {follow.plannedTime}</Text>
+                        <Text>👤 {follow.assignedToName || '未分配'}</Text>
+                      </View>
+                    )}
+                    {follow.notes && (
+                      <View className={styles.followUpNotes}>备注：{follow.notes}</View>
+                    )}
+                    {follow.record && (
+                      <View className={styles.followUpRecordBox}>
+                        <Text className={styles.followUpRecordLabel}>回访结果：</Text>
+                        <Text className={styles.followUpRecordText}>
+                          {follow.record.result === 'satisfied' ? '满意 😀' :
+                           follow.record.result === 'neutral' ? '一般 😐' :
+                           follow.record.result === 'complaint' ? '投诉 😠' : '严重问题 🚨'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ))
+              ) : (
+                <View className={styles.followUpEmpty}>
+                  <Text className={styles.followUpEmptyIcon}>📞</Text>
+                  <Text className={styles.followUpEmptyText}>暂无回访计划</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
 
       <View className={styles.logoutSection}>
         <View className={styles.logoutBtn} onClick={handleLogout}>

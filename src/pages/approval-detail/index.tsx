@@ -15,7 +15,9 @@ const operationTypeLabel: Record<OperationType, string> = {
   resubmit: '重新提交',
   start_execution: '开始执行',
   complete: '标记完成',
-  cancel: '取消预约'
+  cancel: '取消预约',
+  create_followup: '创建回访',
+  complete_followup: '完成回访'
 };
 
 const operationTypeIcon: Record<OperationType, string> = {
@@ -25,7 +27,9 @@ const operationTypeIcon: Record<OperationType, string> = {
   resubmit: '🔄',
   start_execution: '▶️',
   complete: '🎉',
-  cancel: '🚫'
+  cancel: '🚫',
+  create_followup: '📞',
+  complete_followup: '✓'
 };
 
 const operationTypeColor: Record<OperationType, string> = {
@@ -35,7 +39,9 @@ const operationTypeColor: Record<OperationType, string> = {
   resubmit: '#faad14',
   start_execution: '#722ed1',
   complete: '#52c41a',
-  cancel: '#86909c'
+  cancel: '#86909c',
+  create_followup: '#13c2c2',
+  complete_followup: '#52c41a'
 };
 
 const ApprovalDetailPage: React.FC = () => {
@@ -47,7 +53,8 @@ const ApprovalDetailPage: React.FC = () => {
     resubmitAppointment,
     savePreOpAssessment,
     currentUser,
-    isMyApprovalTurn
+    isMyApprovalTurn,
+    checkPreOpAssessmentComplete
   } = useAppStore();
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -96,15 +103,16 @@ const ApprovalDetailPage: React.FC = () => {
     if (!appointment || !canOperate) return;
 
     if (isDoctorNode) {
-      if (!assessment.informedConsent) {
-        Taro.showToast({ title: '请先完成知情同意', icon: 'none' });
+      const assessWithSig: PreOpAssessment = {
+        ...assessment,
+        doctorSignature: doctorSigned ? currentUser.name : undefined
+      };
+      const check = checkPreOpAssessmentComplete(assessWithSig);
+      if (!check.ok) {
+        Taro.showToast({ title: check.missing || '请先完成术前评估', icon: 'none' });
         return;
       }
-      if (!doctorSigned) {
-        Taro.showToast({ title: '请先完成医生签字', icon: 'none' });
-        return;
-      }
-      savePreOpAssessment(appointment.id, assessment, currentUser.name);
+      savePreOpAssessment(appointment.id, assessWithSig, currentUser.name);
     }
 
     Taro.showModal({

@@ -18,7 +18,8 @@ const ApprovalPage: React.FC = () => {
     savePreOpAssessment,
     currentUser,
     isMyApprovalTurn,
-    switchRole
+    switchRole,
+    canApproveDoctorNode
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('myPending');
@@ -90,8 +91,9 @@ const ApprovalPage: React.FC = () => {
   const handleApprove = (e: React.MouseEvent, apt: Appointment) => {
     e.stopPropagation();
 
-    if (isDoctorNodeForApt(apt) && !canDoctorApprove(apt)) {
-      Taro.showToast({ title: '请先完成术前评估、知情同意和签字', icon: 'none' });
+    const doctorCheck = canApproveDoctorNode(apt);
+    if (!doctorCheck.ok) {
+      Taro.showToast({ title: doctorCheck.missing || '请先完成术前评估', icon: 'none' });
       return;
     }
 
@@ -223,7 +225,9 @@ const ApprovalPage: React.FC = () => {
             const canOperate = isMyApprovalTurn(apt);
             const wasRejected = hasRejectedNode(apt);
             const isDoctor = isDoctorNodeForApt(apt);
-            const doctorCanPass = canDoctorApprove(apt);
+            const doctorCheckResult = canApproveDoctorNode(apt);
+            const doctorCanPass = doctorCheckResult.ok;
+            const doctorMissingHint = doctorCheckResult.missing;
 
             return (
               <View
@@ -289,6 +293,7 @@ const ApprovalPage: React.FC = () => {
                     ) : isDoctor && !doctorCanPass ? (
                       <View
                         className={classnames(styles.btn, styles.btnWarning)}
+                        title={doctorMissingHint}
                         onClick={() => goToDetail(apt.id)}
                       >
                         去完成评估

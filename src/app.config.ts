@@ -6,7 +6,8 @@ export default defineAppConfig({
     'pages/mine/index',
     'pages/appointment-detail/index',
     'pages/create-appointment/index',
-    'pages/approval-detail/index'
+    'pages/approval-detail/index',
+    'pages/dashboard/index'
   ],
   window: {
     backgroundTextStyle: 'light',

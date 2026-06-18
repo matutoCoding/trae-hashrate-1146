@@ -144,3 +144,59 @@
   font-size: $font-size-md;
   color: $color-text-tertiary;
 }
+
+.followUpCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.followUpHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.followUpCustomer {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.followUpBadge {
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+
+  &.pending {
+    background: $color-warning-bg;
+    color: $color-warning;
+  }
+
+  &.done {
+    background: $color-success-bg;
+    color: $color-success;
+  }
+}
+
+.followUpInfo {
+  display: flex;
+  gap: $spacing-lg;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+}
+
+.followUpNotes {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding-top: $spacing-sm;
+  border-top: 1rpx solid $color-divider;
+}

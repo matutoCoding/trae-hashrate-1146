@@ -232,3 +232,140 @@
   font-size: $font-size-xs;
   color: $color-text-tertiary;
 }
+
+.followUpModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.followUpModal {
+  width: 100%;
+  max-height: 80vh;
+  background: $color-bg-card;
+  border-radius: $radius-lg $radius-lg 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.followUpModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.followUpModalTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.followUpModalClose {
+  font-size: 48rpx;
+  color: $color-text-tertiary;
+  line-height: 1;
+}
+
+.followUpModalScroll {
+  max-height: 65vh;
+  padding: $spacing-md $page-padding;
+}
+
+.followUpCard {
+  background: $color-bg-page;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.followUpHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.followUpCustomer {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.followUpBadge {
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+
+  &.pending {
+    background: $color-warning-bg;
+    color: $color-warning;
+  }
+
+  &.done {
+    background: $color-success-bg;
+    color: $color-success;
+  }
+}
+
+.followUpInfo {
+  display: flex;
+  gap: $spacing-lg;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+}
+
+.followUpNotes {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding-top: $spacing-sm;
+  border-top: 1rpx solid $color-divider;
+}
+
+.followUpRecordBox {
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1rpx solid $color-divider;
+  display: flex;
+  align-items: center;
+}
+
+.followUpRecordLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-right: $spacing-sm;
+}
+
+.followUpRecordText {
+  font-size: $font-size-sm;
+  color: $color-success;
+  font-weight: $font-weight-medium;
+}
+
+.followUpEmpty {
+  padding: $spacing-xl * 2 $spacing-lg;
+  text-align: center;
+}
+
+.followUpEmptyIcon {
+  font-size: 80rpx;
+  margin-bottom: $spacing-md;
+  display: block;
+}
+
+.followUpEmptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

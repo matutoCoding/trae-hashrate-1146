@@ -194,7 +194,45 @@ export const mockAppointments: Appointment[] = [
       { id: 'log-006-3', type: 'approve', operatorName: '张医生', operatorRole: 'doctor', operatedAt: '2024-06-17T11:00:00.000Z', details: '主诊医生审核 - 审批通过' },
       { id: 'log-006-4', type: 'approve', operatorName: '赵院长', operatorRole: 'director', operatedAt: '2024-06-17T14:00:00.000Z', details: '院长审核 - 审批通过' },
       { id: 'log-006-5', type: 'start_execution', operatorName: '张医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T15:30:00.000Z', comment: '客户状态良好，正常注射', details: '开始执行 - 执行医生：张医生' },
-      { id: 'log-006-6', type: 'complete', operatorName: '张医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T15:50:00.000Z', comment: '注射完成，无不良反应', details: '执行完成 - 完成说明：注射完成，无不良反应' }
+      { id: 'log-006-6', type: 'complete', operatorName: '张医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T15:50:00.000Z', comment: '注射完成，无不良反应', details: '执行完成 - 完成说明：注射完成，无不良反应' },
+      { id: 'log-006-7', type: 'create_followup', operatorName: '陈咨询师', operatorRole: 'consultant', operatedAt: formatDate(today) + 'T16:00:00.000Z', comment: `回访日期：${formatDate(today)} 10:00`, details: '创建回访计划' },
+      { id: 'log-006-8', type: 'complete_followup', operatorName: '陈咨询师', operatorRole: 'consultant', operatedAt: formatDate(today) + 'T10:30:00.000Z', comment: '结果：满意，反馈：效果很好，无不良反应', details: '完成回访处理' }
+    ],
+    followUpPlans: [
+      {
+        id: 'fup-006-1',
+        appointmentId: 'apt-006',
+        plannedDate: formatDate(today),
+        plannedTime: '10:00',
+        status: 'done',
+        assignedTo: '陈咨询师',
+        assignedToId: 'user-002',
+        createdAt: formatDate(today) + 'T16:00:00.000Z'
+      },
+      {
+        id: 'fup-006-2',
+        appointmentId: 'apt-006',
+        plannedDate: formatDate(addDays(today, 7)),
+        plannedTime: '10:00',
+        status: 'pending',
+        assignedTo: '陈咨询师',
+        assignedToId: 'user-002',
+        createdAt: formatDate(today) + 'T10:30:00.000Z'
+      }
+    ],
+    followUpRecords: [
+      {
+        id: 'fur-006-1',
+        planId: 'fup-006-1',
+        appointmentId: 'apt-006',
+        result: 'satisfied',
+        customerFeedback: '效果很好，无不良反应，满意',
+        handledBy: '陈咨询师',
+        handledById: 'user-002',
+        handledAt: formatDate(today) + 'T10:30:00.000Z',
+        nextFollowUpDate: formatDate(addDays(today, 7)),
+        notes: '建议7天后再回访一次'
+      }
     ]
   },
   {
