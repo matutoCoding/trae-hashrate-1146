@@ -1,0 +1,293 @@
+@use '@/styles/variables.scss' as *;
+
+.schedulePage {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 140rpx;
+}
+
+.roomTabs {
+  background: $color-bg-card;
+  padding: $spacing-md $page-padding;
+  white-space: nowrap;
+  box-shadow: $shadow-card;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  
+  @include scroll-x-container;
+}
+
+.roomTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm $spacing-lg;
+  margin-right: $spacing-sm;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  background: $color-bg-hover;
+  color: $color-text-secondary;
+  transition: all $transition-base;
+  
+  &.active {
+    background: $color-primary;
+    color: $color-text-white;
+  }
+  
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.roomInfo {
+  padding: $spacing-lg $page-padding;
+  background: $color-bg-card;
+  margin-top: $spacing-sm;
+}
+
+.roomName {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.roomMeta {
+  display: flex;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.calendarSection {
+  background: $color-bg-card;
+  margin: $spacing-md 0;
+  padding: $spacing-lg $page-padding;
+  box-shadow: $shadow-card;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-lg;
+}
+
+.monthTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.navBtn {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-round;
+  background: $color-bg-hover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  color: $color-text-secondary;
+  
+  &:active {
+    background: $color-border;
+  }
+}
+
+.weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: $spacing-sm;
+}
+
+.weekDay {
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding: $spacing-sm 0;
+}
+
+.calendarDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: $spacing-xs;
+}
+
+.calendarDay {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-md;
+  transition: all $transition-base;
+  
+  &.otherMonth {
+    opacity: 0.3;
+  }
+  
+  &.today {
+    border: 2rpx solid $color-primary;
+  }
+  
+  &.selected {
+    background: $color-primary;
+    color: $color-text-white;
+    
+    .dayNumber {
+      color: $color-text-white;
+    }
+    
+    .dayCount {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+  
+  &:active {
+    background: $color-primary-bg;
+  }
+}
+
+.dayNumber {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+}
+
+.dayCount {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: 2rpx;
+}
+
+.timeSlotsSection {
+  padding: 0 $page-padding;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.timeSlotsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-sm;
+}
+
+.timeSlot {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  text-align: center;
+  border: 2rpx solid transparent;
+  transition: all $transition-base;
+  
+  &.available {
+    border-color: $color-border;
+    color: $color-text-primary;
+    
+    &:active {
+      border-color: $color-primary;
+      background: $color-primary-bg;
+    }
+  }
+  
+  &.unavailable {
+    background: $color-bg-hover;
+    color: $color-text-disabled;
+  }
+  
+  &.selected {
+    border-color: $color-primary;
+    background: $color-primary-bg;
+    color: $color-primary;
+  }
+}
+
+.slotTime {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+}
+
+.slotStatus {
+  font-size: $font-size-xs;
+  margin-top: $spacing-xs;
+}
+
+.createBtn {
+  position: fixed;
+  bottom: 140rpx;
+  left: $page-padding;
+  right: $page-padding;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border-radius: $radius-button;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  box-shadow: $shadow-float;
+  z-index: 100;
+  transition: all $transition-base;
+  
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  
+  &.disabled {
+    background: $color-text-disabled;
+    box-shadow: none;
+  }
+}
+
+.appointmentList {
+  padding: 0 $page-padding;
+}
+
+.listTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.legend {
+  display: flex;
+  gap: $spacing-lg;
+  padding: $spacing-md 0;
+  justify-content: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.legendDot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: $radius-round;
+  
+  &.available {
+    background: $color-success;
+  }
+  
+  &.unavailable {
+    background: $color-text-disabled;
+  }
+}

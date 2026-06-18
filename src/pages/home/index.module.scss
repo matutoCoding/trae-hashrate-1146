@@ -1,0 +1,146 @@
+@use '@/styles/variables.scss' as *;
+
+.homePage {
+  min-height: 100vh;
+  background: linear-gradient(180deg, $color-primary 0%, $color-primary-dark 30%, $color-bg-page 30%);
+  padding-bottom: 120rpx;
+}
+
+.header {
+  padding: $spacing-lg $page-padding $spacing-xl;
+  color: $color-text-white;
+}
+
+.welcome {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-medium;
+  opacity: 0.9;
+  margin-bottom: $spacing-xs;
+}
+
+.userName {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-sm;
+}
+
+.tips {
+  font-size: $font-size-sm;
+  opacity: 0.8;
+}
+
+.statSection {
+  padding: 0 $page-padding;
+  margin-top: -40rpx;
+  margin-bottom: $spacing-lg;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+}
+
+.quickActions {
+  padding: 0 $page-padding;
+  margin-bottom: $spacing-lg;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-md;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.actionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-sm;
+  transition: all $transition-base;
+  
+  &:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+.actionIcon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  
+  &.primary {
+    background: $color-primary-bg;
+    color: $color-primary;
+  }
+  
+  &.success {
+    background: $color-success-bg;
+    color: $color-success;
+  }
+  
+  &.warning {
+    background: $color-warning-bg;
+    color: $color-warning;
+  }
+  
+  &.error {
+    background: $color-error-bg;
+    color: $color-error;
+  }
+}
+
+.actionLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.appointmentSection {
+  padding: 0 $page-padding;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.viewAll {
+  font-size: $font-size-sm;
+  color: $color-primary;
+}
+
+.emptyState {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xl * 2 $spacing-lg;
+  text-align: center;
+  box-shadow: $shadow-card;
+}
+
+.emptyIcon {
+  font-size: 80rpx;
+  margin-bottom: $spacing-md;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}

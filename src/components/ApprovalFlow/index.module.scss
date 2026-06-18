@@ -1,0 +1,98 @@
+@use '@/styles/variables.scss' as *;
+
+.approvalFlow {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.flowTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-lg;
+}
+
+.flowSteps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.stepIcon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-round;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  margin-bottom: $spacing-sm;
+  transition: all $transition-base;
+}
+
+.pending {
+  background: $color-warning-bg;
+  color: $color-warning;
+}
+
+.approved {
+  background: $color-success;
+  color: $color-text-white;
+}
+
+.rejected {
+  background: $color-error;
+  color: $color-text-white;
+}
+
+.draft {
+  background: $color-bg-hover;
+  color: $color-text-tertiary;
+}
+
+.stepName {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-xs;
+  text-align: center;
+}
+
+.stepInfo {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.stepLine {
+  position: absolute;
+  top: 32rpx;
+  left: 50%;
+  right: -50%;
+  height: 4rpx;
+  background: $color-border;
+  z-index: 0;
+}
+
+.stepLineActive {
+  background: $color-success;
+}
+
+.lastStep {
+  .stepLine {
+    display: none;
+  }
+}

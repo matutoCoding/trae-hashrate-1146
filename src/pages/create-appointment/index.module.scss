@@ -1,0 +1,226 @@
+@use '@/styles/variables.scss' as *;
+
+.createPage {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 160rpx;
+}
+
+.formSection {
+  background: $color-bg-card;
+  margin-bottom: $spacing-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  padding-bottom: $spacing-md;
+  border-bottom: 1rpx solid $color-divider;
+}
+
+.formItem {
+  display: flex;
+  align-items: flex-start;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.formLabel {
+  width: 160rpx;
+  flex-shrink: 0;
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  line-height: 64rpx;
+}
+
+.formRequired {
+  color: $color-error;
+  margin-right: 4rpx;
+}
+
+.formValue {
+  flex: 1;
+  min-height: 64rpx;
+  display: flex;
+  align-items: center;
+}
+
+.formInput {
+  width: 100%;
+  height: 64rpx;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.formTextarea {
+  width: 100%;
+  min-height: 160rpx;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  border: none;
+  outline: none;
+  background: transparent;
+  line-height: 1.6;
+}
+
+.selectValue {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  flex: 1;
+  
+  &.placeholder {
+    color: $color-text-tertiary;
+  }
+}
+
+.selectArrow {
+  color: $color-text-tertiary;
+  font-size: $font-size-lg;
+  margin-left: $spacing-sm;
+}
+
+.projectList {
+  max-height: 600rpx;
+}
+
+.projectItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md 0;
+  border-bottom: 1rpx solid $color-divider;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.projectInfo {
+  flex: 1;
+}
+
+.projectName {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  margin-bottom: 4rpx;
+}
+
+.projectMeta {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.projectPrice {
+  font-size: $font-size-md;
+  color: $color-primary;
+  font-weight: $font-weight-semibold;
+}
+
+.selectedCheck {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-round;
+  background: $color-primary;
+  color: $color-text-white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  margin-left: $spacing-md;
+}
+
+.timeInfo {
+  font-size: $font-size-md;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.datePicker {
+  flex: 1;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: $color-bg-card;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc(#{$spacing-md} + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx  16rpx rgba(0, 0, 0, 0.08);
+  z-index: 100;
+}
+
+.submitBtn {
+  width: 100%;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border-radius: $radius-button;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+  
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+  
+  &.disabled {
+    background: $color-text-disabled;
+  }
+}
+
+.tipsBox {
+  background: $color-warning-bg;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+}
+
+.tipsTitle {
+  font-size: $font-size-sm;
+  color: $color-warning;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-xs;
+}
+
+.tipsContent {
+  font-size: $font-size-xs;
+  color: $color-warning;
+  line-height: 1.6;
+}
+
+.conflictWarning {
+  background: $color-error-bg;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-sm;
+  margin-top: $spacing-sm;
+  
+  Text {
+    font-size: $font-size-sm;
+    color: $color-error;
+  }
+}

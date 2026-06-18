@@ -1,0 +1,202 @@
+@use '@/styles/variables.scss' as *;
+
+.minePage {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding-bottom: 120rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  padding: $spacing-xl * 1.5 $page-padding $spacing-xl * 2;
+  color: $color-text-white;
+  position: relative;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+}
+
+.avatar {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: $radius-round;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+}
+
+.userDetail {
+  flex: 1;
+}
+
+.userName {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-xs;
+}
+
+.userRole {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: $font-size-sm;
+}
+
+.statsRow {
+  display: flex;
+  margin-top: $spacing-xl;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  backdrop-filter: blur(10rpx);
+}
+
+.statItem {
+  flex: 1;
+  text-align: center;
+  
+  &:not(:last-child) {
+    border-right: 2rpx solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+.statValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  margin-bottom: 4rpx;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  opacity: 0.9;
+}
+
+.menuSection {
+  padding: $spacing-md $page-padding;
+  margin-top: -40rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.menuGroup {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+  margin-bottom: $spacing-md;
+}
+
+.menuGroupTitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding: $spacing-md $spacing-lg $spacing-sm;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-lg;
+  border-bottom: 1rpx solid $color-divider;
+  transition: all $transition-base;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.menuIcon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  margin-right: $spacing-md;
+  background: $color-primary-bg;
+  color: $color-primary;
+  
+  &.success {
+    background: $color-success-bg;
+    color: $color-success;
+  }
+  
+  &.warning {
+    background: $color-warning-bg;
+    color: $color-warning;
+  }
+  
+  &.error {
+    background: $color-error-bg;
+    color: $color-error;
+  }
+}
+
+.menuContent {
+  flex: 1;
+}
+
+.menuTitle {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  margin-bottom: 4rpx;
+}
+
+.menuDesc {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.menuArrow {
+  color: $color-text-tertiary;
+  font-size: $font-size-lg;
+}
+
+.menuBadge {
+  background: $color-error;
+  color: $color-text-white;
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-sm;
+}
+
+.logoutSection {
+  padding: $spacing-md $page-padding;
+}
+
+.logoutBtn {
+  width: 100%;
+  height: $button-height-lg;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-md;
+  color: $color-error;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+  
+  &:active {
+    background: $color-error-bg;
+  }
+}
+
+.versionInfo {
+  text-align: center;
+  padding: $spacing-lg 0;
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}

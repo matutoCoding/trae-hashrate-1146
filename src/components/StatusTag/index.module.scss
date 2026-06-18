@@ -1,0 +1,47 @@
+@use '@/styles/variables.scss' as *;
+
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pending {
+  background-color: $color-warning-bg;
+  color: $color-warning;
+}
+
+.approved {
+  background-color: $color-success-bg;
+  color: $color-success;
+}
+
+.rejected {
+  background-color: $color-error-bg;
+  color: $color-error;
+}
+
+.confirmed {
+  background-color: $color-primary-bg;
+  color: $color-primary;
+}
+
+.completed {
+  background-color: $color-success-bg;
+  color: $color-success;
+}
+
+.cancelled {
+  background-color: $color-bg-hover;
+  color: $color-text-tertiary;
+}
+
+.pendingApproval {
+  background-color: $color-warning-bg;
+  color: $color-warning;
+}
