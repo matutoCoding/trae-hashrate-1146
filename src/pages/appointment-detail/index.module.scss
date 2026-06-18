@@ -232,3 +232,151 @@
   border-radius: $radius-sm;
   margin-top: $spacing-sm;
 }
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+}
+
+.modalContent {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  width: 100%;
+  max-width: 600rpx;
+}
+
+.modalTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.modalDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-md;
+}
+
+.modalTextarea {
+  width: 100%;
+  min-height: 200rpx;
+  padding: $spacing-md;
+  background: $color-bg-hover;
+  border-radius: $radius-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  border: none;
+  margin-bottom: $spacing-lg;
+  box-sizing: border-box;
+}
+
+.modalActions {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.modalBtn {
+  flex: 1;
+  height: $button-height-md;
+  border-radius: $radius-button;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  
+  &.cancel {
+    background: $color-bg-hover;
+    color: $color-text-secondary;
+  }
+  
+  &.confirmGreen {
+    background: $color-success;
+    color: $color-text-white;
+  }
+}
+
+.logTimeline {
+  padding-left: 20rpx;
+}
+
+.logItem {
+  display: flex;
+  position: relative;
+  padding-bottom: 32rpx;
+  
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.logDot {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.logLine {
+  position: absolute;
+  left: 23rpx;
+  top: 48rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #e5e6eb;
+}
+
+.logContent {
+  flex: 1;
+  margin-left: 16rpx;
+  padding-top: 4rpx;
+}
+
+.logHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logType {
+  font-size: 28;
+  font-weight: 600;
+}
+
+.logTime {
+  font-size: 22;
+  color: #86909c;
+}
+
+.logOperator {
+  font-size: 24;
+  color: #4e5969;
+  margin-top: 4rpx;
+}
+
+.logComment {
+  font-size: 24;
+  color: #4e5969;
+  margin-top: 4rpx;
+}
+
+.logDetails {
+  font-size: 22;
+  color: #86909c;
+  margin-top: 2rpx;
+}

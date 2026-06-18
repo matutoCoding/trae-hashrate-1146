@@ -304,3 +304,77 @@
     color: $color-text-white;
   }
 }
+
+.logTimeline {
+  padding-left: 20rpx;
+}
+
+.logItem {
+  display: flex;
+  position: relative;
+  padding-bottom: 32rpx;
+  
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.logDot {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.logLine {
+  position: absolute;
+  left: 23rpx;
+  top: 48rpx;
+  bottom: 0;
+  width: 2rpx;
+  background: #e5e6eb;
+}
+
+.logContent {
+  flex: 1;
+  margin-left: 16rpx;
+  padding-top: 4rpx;
+}
+
+.logHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logType {
+  font-size: 28;
+  font-weight: 600;
+}
+
+.logTime {
+  font-size: 22;
+  color: #86909c;
+}
+
+.logOperator {
+  font-size: 24;
+  color: #4e5969;
+  margin-top: 4rpx;
+}
+
+.logComment {
+  font-size: 24;
+  color: #4e5969;
+  margin-top: 4rpx;
+}
+
+.logDetails {
+  font-size: 22;
+  color: #86909c;
+  margin-top: 2rpx;
+}

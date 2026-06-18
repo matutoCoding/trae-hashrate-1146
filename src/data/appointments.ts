@@ -31,14 +31,20 @@ export const mockAppointments: Appointment[] = [
     doctorName: '王医生',
     directorName: '赵院长',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-18 10:30', comment: '客户需求明确，资料齐全' },
-      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '王医生', operatedAt: '2024-06-18 14:20', comment: '身体状况良好，适合手术' },
-      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-18 16:00', comment: '同意手术方案' }
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-18T10:30:00.000Z', comment: '客户需求明确，资料齐全' },
+      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '王医生', operatedAt: '2024-06-18T14:20:00.000Z', comment: '身体状况良好，适合手术' },
+      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-18T16:00:00.000Z', comment: '同意手术方案' }
     ],
     currentApprovalIndex: 3,
     notes: '客户对效果期望较高，术前请详细沟通',
-    createdAt: '2024-06-17 09:00',
-    updatedAt: '2024-06-18 16:00'
+    createdAt: '2024-06-17T09:00:00.000Z',
+    updatedAt: '2024-06-18T16:00:00.000Z',
+    operationLogs: [
+      { id: 'log-001-1', type: 'create', operatorName: '李咨询师', operatedAt: '2024-06-17T09:00:00.000Z', comment: '创建预约' },
+      { id: 'log-001-2', type: 'approve', operatorName: '李咨询师', operatorRole: 'consultant', operatedAt: '2024-06-18T10:30:00.000Z', comment: '客户需求明确，资料齐全', details: '咨询师审核 - 审批通过' },
+      { id: 'log-001-3', type: 'approve', operatorName: '王医生', operatorRole: 'doctor', operatedAt: '2024-06-18T14:20:00.000Z', comment: '身体状况良好，适合手术', details: '主诊医生审核 - 审批通过' },
+      { id: 'log-001-4', type: 'approve', operatorName: '赵院长', operatorRole: 'director', operatedAt: '2024-06-18T16:00:00.000Z', comment: '同意手术方案', details: '院长审核 - 审批通过' }
+    ]
   },
   {
     id: 'apt-002',
@@ -60,8 +66,11 @@ export const mockAppointments: Appointment[] = [
     ],
     currentApprovalIndex: 0,
     notes: '首次到店，需要详细介绍',
-    createdAt: formatDate(today) + ' 08:30',
-    updatedAt: formatDate(today) + ' 08:30'
+    createdAt: formatDate(today) + 'T08:30:00.000Z',
+    updatedAt: formatDate(today) + 'T08:30:00.000Z',
+    operationLogs: [
+      { id: 'log-002-1', type: 'create', operatorName: '陈咨询师', operatedAt: formatDate(today) + 'T08:30:00.000Z', comment: '创建预约' }
+    ]
   },
   {
     id: 'apt-003',
@@ -78,14 +87,18 @@ export const mockAppointments: Appointment[] = [
     consultantName: '李咨询师',
     doctorName: '张医生',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-18 11:00', comment: '客户资料完整' },
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-18T11:00:00.000Z', comment: '客户资料完整' },
       { type: 'doctor', name: '主诊医生审核', status: 'pending' },
       { type: 'director', name: '院长审核', status: 'draft' }
     ],
     currentApprovalIndex: 1,
     notes: '手术方案需医生最终确认',
-    createdAt: '2024-06-18 10:00',
-    updatedAt: '2024-06-18 11:00'
+    createdAt: '2024-06-18T10:00:00.000Z',
+    updatedAt: '2024-06-18T11:00:00.000Z',
+    operationLogs: [
+      { id: 'log-003-1', type: 'create', operatorName: '李咨询师', operatedAt: '2024-06-18T10:00:00.000Z', comment: '创建预约' },
+      { id: 'log-003-2', type: 'approve', operatorName: '李咨询师', operatorRole: 'consultant', operatedAt: '2024-06-18T11:00:00.000Z', comment: '客户资料完整', details: '咨询师审核 - 审批通过' }
+    ]
   },
   {
     id: 'apt-004',
@@ -102,13 +115,19 @@ export const mockAppointments: Appointment[] = [
     consultantName: '周咨询师',
     doctorName: '刘医生',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '周咨询师', operatedAt: '2024-06-17 15:00' },
-      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '刘医生', operatedAt: '2024-06-17 16:30', comment: '适合激光治疗' },
-      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-17 17:30' }
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '周咨询师', operatedAt: '2024-06-17T15:00:00.000Z' },
+      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '刘医生', operatedAt: '2024-06-17T16:30:00.000Z', comment: '适合激光治疗' },
+      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-17T17:30:00.000Z' }
     ],
     currentApprovalIndex: 3,
-    createdAt: '2024-06-17 14:00',
-    updatedAt: '2024-06-17 17:30'
+    createdAt: '2024-06-17T14:00:00.000Z',
+    updatedAt: '2024-06-17T17:30:00.000Z',
+    operationLogs: [
+      { id: 'log-004-1', type: 'create', operatorName: '周咨询师', operatedAt: '2024-06-17T14:00:00.000Z', comment: '创建预约' },
+      { id: 'log-004-2', type: 'approve', operatorName: '周咨询师', operatorRole: 'consultant', operatedAt: '2024-06-17T15:00:00.000Z', details: '咨询师审核 - 审批通过' },
+      { id: 'log-004-3', type: 'approve', operatorName: '刘医生', operatorRole: 'doctor', operatedAt: '2024-06-17T16:30:00.000Z', comment: '适合激光治疗', details: '主诊医生审核 - 审批通过' },
+      { id: 'log-004-4', type: 'approve', operatorName: '赵院长', operatorRole: 'director', operatedAt: '2024-06-17T17:30:00.000Z', details: '院长审核 - 审批通过' }
+    ]
   },
   {
     id: 'apt-005',
@@ -121,17 +140,22 @@ export const mockAppointments: Appointment[] = [
     date: formatDate(addDays(today, 2)),
     startTime: '10:00',
     endTime: '12:30',
-    status: 'rejected',
+    status: 'pending_approval',
     consultantName: '李咨询师',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-16 10:00' },
-      { type: 'doctor', name: '主诊医生审核', status: 'rejected', operatorName: '王医生', operatedAt: '2024-06-17 09:30', comment: '客户体重超标，建议先减重再考虑手术' },
+      { type: 'consultant', name: '咨询师审核', status: 'pending' },
+      { type: 'doctor', name: '主诊医生审核', status: 'rejected', operatorName: '王医生', operatedAt: '2024-06-17T09:30:00.000Z', comment: '客户体重超标，建议先减重再考虑手术' },
       { type: 'director', name: '院长审核', status: 'draft' }
     ],
-    currentApprovalIndex: 1,
+    currentApprovalIndex: 0,
     notes: '被医生驳回，需要补充减重计划',
-    createdAt: '2024-06-16 09:00',
-    updatedAt: '2024-06-17 09:30'
+    createdAt: '2024-06-16T09:00:00.000Z',
+    updatedAt: '2024-06-17T09:30:00.000Z',
+    operationLogs: [
+      { id: 'log-005-1', type: 'create', operatorName: '李咨询师', operatedAt: '2024-06-16T09:00:00.000Z', comment: '创建预约' },
+      { id: 'log-005-2', type: 'approve', operatorName: '李咨询师', operatorRole: 'consultant', operatedAt: '2024-06-16T10:00:00.000Z', details: '咨询师审核 - 审批通过' },
+      { id: 'log-005-3', type: 'reject', operatorName: '王医生', operatorRole: 'doctor', operatedAt: '2024-06-17T09:30:00.000Z', comment: '客户体重超标，建议先减重再考虑手术', details: '主诊医生审核 - 驳回，退回上一环节' }
+    ]
   },
   {
     id: 'apt-006',
@@ -149,13 +173,29 @@ export const mockAppointments: Appointment[] = [
     doctorName: '张医生',
     directorName: '赵院长',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '陈咨询师', operatedAt: '2024-06-17 10:00' },
-      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '张医生', operatedAt: '2024-06-17 11:00' },
-      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-17 14:00' }
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '陈咨询师', operatedAt: '2024-06-17T10:00:00.000Z' },
+      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '张医生', operatedAt: '2024-06-17T11:00:00.000Z' },
+      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-17T14:00:00.000Z' }
     ],
     currentApprovalIndex: 3,
-    createdAt: '2024-06-16 16:00',
-    updatedAt: formatDate(today) + ' 15:50'
+    createdAt: '2024-06-16T16:00:00.000Z',
+    updatedAt: formatDate(today) + 'T15:50:00.000Z',
+    executionInfo: {
+      startTime: formatDate(today) + 'T15:30:00.000Z',
+      endTime: formatDate(today) + 'T15:50:00.000Z',
+      executingDoctor: '张医生',
+      executingDoctorId: 'user-003',
+      executionNotes: '客户状态良好，正常注射',
+      completionNotes: '注射完成，无不良反应'
+    },
+    operationLogs: [
+      { id: 'log-006-1', type: 'create', operatorName: '陈咨询师', operatedAt: '2024-06-16T16:00:00.000Z', comment: '创建预约' },
+      { id: 'log-006-2', type: 'approve', operatorName: '陈咨询师', operatorRole: 'consultant', operatedAt: '2024-06-17T10:00:00.000Z', details: '咨询师审核 - 审批通过' },
+      { id: 'log-006-3', type: 'approve', operatorName: '张医生', operatorRole: 'doctor', operatedAt: '2024-06-17T11:00:00.000Z', details: '主诊医生审核 - 审批通过' },
+      { id: 'log-006-4', type: 'approve', operatorName: '赵院长', operatorRole: 'director', operatedAt: '2024-06-17T14:00:00.000Z', details: '院长审核 - 审批通过' },
+      { id: 'log-006-5', type: 'start_execution', operatorName: '张医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T15:30:00.000Z', comment: '客户状态良好，正常注射', details: '开始执行 - 执行医生：张医生' },
+      { id: 'log-006-6', type: 'complete', operatorName: '张医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T15:50:00.000Z', comment: '注射完成，无不良反应', details: '执行完成 - 完成说明：注射完成，无不良反应' }
+    ]
   },
   {
     id: 'apt-007',
@@ -171,13 +211,18 @@ export const mockAppointments: Appointment[] = [
     status: 'pending_approval',
     consultantName: '周咨询师',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '周咨询师', operatedAt: formatDate(today) + ' 10:00' },
-      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '刘医生', operatedAt: formatDate(today) + ' 11:30' },
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '周咨询师', operatedAt: formatDate(today) + 'T10:00:00.000Z' },
+      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '刘医生', operatedAt: formatDate(today) + 'T11:30:00.000Z' },
       { type: 'director', name: '院长审核', status: 'pending' }
     ],
     currentApprovalIndex: 2,
-    createdAt: formatDate(today) + ' 09:30',
-    updatedAt: formatDate(today) + ' 11:30'
+    createdAt: formatDate(today) + 'T09:30:00.000Z',
+    updatedAt: formatDate(today) + 'T11:30:00.000Z',
+    operationLogs: [
+      { id: 'log-007-1', type: 'create', operatorName: '周咨询师', operatedAt: formatDate(today) + 'T09:30:00.000Z', comment: '创建预约' },
+      { id: 'log-007-2', type: 'approve', operatorName: '周咨询师', operatorRole: 'consultant', operatedAt: formatDate(today) + 'T10:00:00.000Z', details: '咨询师审核 - 审批通过' },
+      { id: 'log-007-3', type: 'approve', operatorName: '刘医生', operatorRole: 'doctor', operatedAt: formatDate(today) + 'T11:30:00.000Z', details: '主诊医生审核 - 审批通过' }
+    ]
   },
   {
     id: 'apt-008',
@@ -193,14 +238,21 @@ export const mockAppointments: Appointment[] = [
     status: 'cancelled',
     consultantName: '李咨询师',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-15 14:00' },
-      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '王医生', operatedAt: '2024-06-15 15:30' },
-      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-15 16:30' }
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '李咨询师', operatedAt: '2024-06-15T14:00:00.000Z' },
+      { type: 'doctor', name: '主诊医生审核', status: 'approved', operatorName: '王医生', operatedAt: '2024-06-15T15:30:00.000Z' },
+      { type: 'director', name: '院长审核', status: 'approved', operatorName: '赵院长', operatedAt: '2024-06-15T16:30:00.000Z' }
     ],
     currentApprovalIndex: 3,
     notes: '客户临时有事取消预约',
-    createdAt: '2024-06-14 10:00',
-    updatedAt: '2024-06-17 09:00'
+    createdAt: '2024-06-14T10:00:00.000Z',
+    updatedAt: '2024-06-17T09:00:00.000Z',
+    operationLogs: [
+      { id: 'log-008-1', type: 'create', operatorName: '李咨询师', operatedAt: '2024-06-14T10:00:00.000Z', comment: '创建预约' },
+      { id: 'log-008-2', type: 'approve', operatorName: '李咨询师', operatorRole: 'consultant', operatedAt: '2024-06-15T14:00:00.000Z', details: '咨询师审核 - 审批通过' },
+      { id: 'log-008-3', type: 'approve', operatorName: '王医生', operatorRole: 'doctor', operatedAt: '2024-06-15T15:30:00.000Z', details: '主诊医生审核 - 审批通过' },
+      { id: 'log-008-4', type: 'approve', operatorName: '赵院长', operatorRole: 'director', operatedAt: '2024-06-15T16:30:00.000Z', details: '院长审核 - 审批通过' },
+      { id: 'log-008-5', type: 'cancel', operatorName: '李咨询师', operatedAt: '2024-06-17T09:00:00.000Z', comment: '客户临时有事取消预约', details: '取消预约' }
+    ]
   },
   {
     id: 'apt-009',
@@ -216,13 +268,17 @@ export const mockAppointments: Appointment[] = [
     status: 'pending_approval',
     consultantName: '陈咨询师',
     approvalNodes: [
-      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '陈咨询师', operatedAt: formatDate(today) + ' 09:00' },
+      { type: 'consultant', name: '咨询师审核', status: 'approved', operatorName: '陈咨询师', operatedAt: formatDate(today) + 'T09:00:00.000Z' },
       { type: 'doctor', name: '主诊医生审核', status: 'pending' },
       { type: 'director', name: '院长审核', status: 'draft' }
     ],
     currentApprovalIndex: 1,
-    createdAt: formatDate(today) + ' 08:30',
-    updatedAt: formatDate(today) + ' 09:00'
+    createdAt: formatDate(today) + 'T08:30:00.000Z',
+    updatedAt: formatDate(today) + 'T09:00:00.000Z',
+    operationLogs: [
+      { id: 'log-009-1', type: 'create', operatorName: '陈咨询师', operatedAt: formatDate(today) + 'T08:30:00.000Z', comment: '创建预约' },
+      { id: 'log-009-2', type: 'approve', operatorName: '陈咨询师', operatorRole: 'consultant', operatedAt: formatDate(today) + 'T09:00:00.000Z', details: '咨询师审核 - 审批通过' }
+    ]
   },
   {
     id: 'apt-010',
@@ -244,7 +300,10 @@ export const mockAppointments: Appointment[] = [
     ],
     currentApprovalIndex: 0,
     notes: '颌面手术，需要详细术前评估',
-    createdAt: formatDate(today) + ' 10:00',
-    updatedAt: formatDate(today) + ' 10:00'
+    createdAt: formatDate(today) + 'T10:00:00.000Z',
+    updatedAt: formatDate(today) + 'T10:00:00.000Z',
+    operationLogs: [
+      { id: 'log-010-1', type: 'create', operatorName: '李咨询师', operatedAt: formatDate(today) + 'T10:00:00.000Z', comment: '创建预约' }
+    ]
   }
 ];

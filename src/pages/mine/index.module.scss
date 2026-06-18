@@ -49,6 +49,38 @@
   font-size: $font-size-sm;
 }
 
+.switchRoleBtn {
+  padding: 8rpx 24rpx;
+  border-radius: 48rpx;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+}
+
+.switchRoleText {
+  font-size: 24;
+  color: #fff;
+}
+
+.roleSwitcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.roleOption {
+  padding: 12rpx 32rpx;
+  border-radius: 48rpx;
+  font-size: 24;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.roleActive {
+  background: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+}
+
 .statsRow {
   display: flex;
   margin-top: $spacing-xl;

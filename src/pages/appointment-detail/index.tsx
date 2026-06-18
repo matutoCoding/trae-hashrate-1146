@@ -1,12 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Textarea } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
 import StatusTag from '@/components/StatusTag';
 import ApprovalFlow from '@/components/ApprovalFlow';
 import classnames from 'classnames';
-import type { Appointment } from '@/types';
+import type { Appointment, OperationType } from '@/types';
+
+const operationTypeLabel: Record<OperationType, string> = {
+  create: '创建预约',
+  approve: '审批通过',
+  reject: '审批驳回',
+  resubmit: '重新提交',
+  start_execution: '开始执行',
+  complete: '标记完成',
+  cancel: '取消预约'
+};
+
+const operationTypeIcon: Record<OperationType, string> = {
+  create: '📝',
+  approve: '✅',
+  reject: '❌',
+  resubmit: '🔄',
+  start_execution: '▶️',
+  complete: '🎉',
+  cancel: '🚫'
+};
+
+const operationTypeColor: Record<OperationType, string> = {
+  create: '#1890ff',
+  approve: '#52c41a',
+  reject: '#ff4d4f',
+  resubmit: '#faad14',
+  start_execution: '#722ed1',
+  complete: '#52c41a',
+  cancel: '#86909c'
+};
 
 const AppointmentDetailPage: React.FC = () => {
   const router = useRouter();
@@ -20,6 +50,10 @@ const AppointmentDetailPage: React.FC = () => {
     isMyApprovalTurn
   } = useAppStore();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [executionNotes, setExecutionNotes] = useState('');
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   useEffect(() => {
     const id = router.params.id;
@@ -86,44 +120,30 @@ const AppointmentDetailPage: React.FC = () => {
     });
   };
 
-  const handleStartExecution = () => {
+  const confirmStartExecution = () => {
     if (!appointment) return;
-
-    Taro.showModal({
-      title: '确认开始执行',
-      content: '确定要开始执行该预约项目吗？',
-      success: (res) => {
-        if (res.confirm) {
-          const ok = startExecution(appointment.id);
-          if (ok) {
-            Taro.showToast({ title: '已开始执行', icon: 'success' });
-            refreshAppointment();
-          } else {
-            Taro.showToast({ title: '操作失败', icon: 'none' });
-          }
-        }
-      }
-    });
+    const ok = startExecution(appointment.id, executionNotes || undefined);
+    if (ok) {
+      Taro.showToast({ title: '已开始执行', icon: 'success' });
+      refreshAppointment();
+      setShowExecutionModal(false);
+      setExecutionNotes('');
+    } else {
+      Taro.showToast({ title: '操作失败', icon: 'none' });
+    }
   };
 
-  const handleComplete = () => {
+  const confirmComplete = () => {
     if (!appointment) return;
-
-    Taro.showModal({
-      title: '确认完成',
-      content: '确定要标记该预约项目为已完成吗？',
-      success: (res) => {
-        if (res.confirm) {
-          const ok = completeAppointment(appointment.id);
-          if (ok) {
-            Taro.showToast({ title: '已标记完成', icon: 'success' });
-            refreshAppointment();
-          } else {
-            Taro.showToast({ title: '操作失败', icon: 'none' });
-          }
-        }
-      }
-    });
+    const ok = completeAppointment(appointment.id, completionNotes || undefined);
+    if (ok) {
+      Taro.showToast({ title: '已标记完成', icon: 'success' });
+      refreshAppointment();
+      setShowCompletionModal(false);
+      setCompletionNotes('');
+    } else {
+      Taro.showToast({ title: '操作失败', icon: 'none' });
+    }
   };
 
   if (!appointment) {
@@ -220,6 +240,11 @@ const AppointmentDetailPage: React.FC = () => {
               </Text>
             </View>
           ))}
+          {canResubmit && (
+            <View className={classnames(styles.btn, styles.btnPrimary)} style={{ marginTop: 16 }} onClick={handleResubmit}>
+              补充资料并重新提交
+            </View>
+          )}
         </View>
       )}
 
@@ -259,8 +284,50 @@ const AppointmentDetailPage: React.FC = () => {
             </View>
             <View className={styles.infoItem}>
               <Text className={styles.infoLabel}>评估日期</Text>
-              <Text className={styles.infoContent}>{appointment.preOpAssessment.assessmentDate || '无'}</Text>
+              <Text className={styles.infoContent}>{appointment.preOpAssessment.assessmentDate ? new Date(appointment.preOpAssessment.assessmentDate).toLocaleString('zh-CN') : '无'}</Text>
             </View>
+          </View>
+        </View>
+      )}
+
+      {appointment.executionInfo && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>执行信息</Text>
+          <View className={styles.infoList}>
+            {appointment.executionInfo.startTime && (
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>开始时间</Text>
+                <Text className={styles.infoContent}>
+                  {new Date(appointment.executionInfo.startTime).toLocaleString('zh-CN')}
+                </Text>
+              </View>
+            )}
+            {appointment.executionInfo.executingDoctor && (
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>执行医生</Text>
+                <Text className={styles.infoContent}>{appointment.executionInfo.executingDoctor}</Text>
+              </View>
+            )}
+            {appointment.executionInfo.executionNotes && (
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>执行备注</Text>
+                <Text className={styles.infoContent}>{appointment.executionInfo.executionNotes}</Text>
+              </View>
+            )}
+            {appointment.executionInfo.endTime && (
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>完成时间</Text>
+                <Text className={styles.infoContent}>
+                  {new Date(appointment.executionInfo.endTime).toLocaleString('zh-CN')}
+                </Text>
+              </View>
+            )}
+            {appointment.executionInfo.completionNotes && (
+              <View className={styles.infoItem}>
+                <Text className={styles.infoLabel}>完成说明</Text>
+                <Text className={styles.infoContent}>{appointment.executionInfo.completionNotes}</Text>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -274,71 +341,42 @@ const AppointmentDetailPage: React.FC = () => {
         </View>
       )}
 
-      <View className={styles.section}>
-        <Text className={styles.sectionTitle}>操作记录</Text>
-        <View className={styles.timeline}>
-          {appointment.approvalNodes.map((node, index) => (
-            <View key={`${node.type}-${index}`} className={styles.timelineItem}>
-              <View
-                className={classnames(
-                  styles.timelineDot,
-                  node.status === 'approved' && styles.success,
-                  node.status === 'rejected' && styles.error,
-                  node.status === 'pending' && styles.active
+      {appointment.operationLogs && appointment.operationLogs.length > 0 && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>操作日志</Text>
+          <View className={styles.logTimeline}>
+            {appointment.operationLogs.map((log, idx) => (
+              <View key={log.id} className={styles.logItem}>
+                <View className={styles.logDot} style={{ background: operationTypeColor[log.type] }}>
+                  <Text style={{ fontSize: 20 }}>{operationTypeIcon[log.type]}</Text>
+                </View>
+                {idx < appointment.operationLogs.length - 1 && (
+                  <View className={styles.logLine} />
                 )}
-              />
-              <View className={styles.timelineLine} />
-              <View className={styles.timelineContent}>
-                <Text className={styles.timelineTitle}>{node.name}</Text>
-                <Text className={styles.timelineDesc}>
-                  {node.status === 'approved'
-                    ? `已通过 - ${node.operatorName}`
-                    : node.status === 'rejected'
-                    ? `已驳回 - ${node.operatorName}`
-                    : node.status === 'pending'
-                    ? '待处理'
-                    : '未开始'}
-                </Text>
-                {node.operatedAt && (
-                  <Text className={styles.timelineTime}>{node.operatedAt}</Text>
-                )}
-                {node.comment && (
-                  <View className={styles.timelineComment}>
-                    <Text>{node.comment}</Text>
+                <View className={styles.logContent}>
+                  <View className={styles.logHeader}>
+                    <Text className={styles.logType} style={{ color: operationTypeColor[log.type] }}>
+                      {operationTypeLabel[log.type]}
+                    </Text>
+                    <Text className={styles.logTime}>
+                      {log.operatedAt ? new Date(log.operatedAt).toLocaleString('zh-CN') : ''}
+                    </Text>
                   </View>
-                )}
+                  <Text className={styles.logOperator}>
+                    {log.operatorName}{log.operatorRole ? `（${log.operatorRole}）` : ''}
+                  </Text>
+                  {log.comment && (
+                    <Text className={styles.logComment}>{log.comment}</Text>
+                  )}
+                  {log.details && (
+                    <Text className={styles.logDetails}>{log.details}</Text>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
-          {appointment.status === 'executing' && (
-            <View className={styles.timelineItem}>
-              <View className={classnames(styles.timelineDot, styles.active)} />
-              <View className={styles.timelineLine} />
-              <View className={styles.timelineContent}>
-                <Text className={styles.timelineTitle}>项目执行中</Text>
-                <Text className={styles.timelineDesc}>正在进行医美项目操作</Text>
-              </View>
-            </View>
-          )}
-          {appointment.status === 'completed' && (
-            <View className={styles.timelineItem}>
-              <View className={classnames(styles.timelineDot, styles.success)} />
-              <View className={styles.timelineContent}>
-                <Text className={styles.timelineTitle}>已完成</Text>
-                <Text className={styles.timelineDesc}>项目操作已完成</Text>
-              </View>
-            </View>
-          )}
-          {appointment.status === 'cancelled' && (
-            <View className={styles.timelineItem}>
-              <View className={classnames(styles.timelineDot, styles.error)} />
-              <View className={styles.timelineContent}>
-                <Text className={styles.timelineTitle}>已取消</Text>
-              </View>
-            </View>
-          )}
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       <View className={styles.bottomBar}>
         {canCancel && (
@@ -346,7 +384,7 @@ const AppointmentDetailPage: React.FC = () => {
             取消预约
           </View>
         )}
-        {appointment.status === 'pending_approval' && isMyApprovalTurn(appointment) && (
+        {appointment.status === 'pending_approval' && isMyApprovalTurn(appointment) && !wasRejected && (
           <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleApproval}>
             去审批
           </View>
@@ -356,22 +394,83 @@ const AppointmentDetailPage: React.FC = () => {
             等待{approvalNodeName}
           </View>
         )}
-        {canResubmit && wasRejected && (
-          <View className={classnames(styles.btn, styles.btnPrimary)} onClick={handleResubmit}>
-            重新提交
-          </View>
-        )}
         {(appointment.status === 'approved' || appointment.status === 'confirmed') && (
-          <View className={classnames(styles.btn, styles.btnSuccess)} onClick={handleStartExecution}>
+          <View
+            className={classnames(styles.btn, styles.btnSuccess)}
+            onClick={() => setShowExecutionModal(true)}
+          >
             开始执行
           </View>
         )}
         {appointment.status === 'executing' && (
-          <View className={classnames(styles.btn, styles.btnSuccess)} onClick={handleComplete}>
+          <View
+            className={classnames(styles.btn, styles.btnSuccess)}
+            onClick={() => setShowCompletionModal(true)}
+          >
             标记完成
           </View>
         )}
       </View>
+
+      {showExecutionModal && (
+        <View className={styles.modal} onClick={() => setShowExecutionModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>开始执行</Text>
+            <Text className={styles.modalDesc}>确认开始执行该预约项目</Text>
+            <Textarea
+              className={styles.modalTextarea}
+              placeholder="请输入执行备注（可选）"
+              value={executionNotes}
+              onInput={(e) => setExecutionNotes(e.detail.value)}
+              maxlength={200}
+            />
+            <View className={styles.modalActions}>
+              <View
+                className={classnames(styles.modalBtn, styles.cancel)}
+                onClick={() => setShowExecutionModal(false)}
+              >
+                取消
+              </View>
+              <View
+                className={classnames(styles.modalBtn, styles.confirmGreen)}
+                onClick={confirmStartExecution}
+              >
+                确认开始
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showCompletionModal && (
+        <View className={styles.modal} onClick={() => setShowCompletionModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>标记完成</Text>
+            <Text className={styles.modalDesc}>确认该预约项目已完成</Text>
+            <Textarea
+              className={styles.modalTextarea}
+              placeholder="请输入完成说明（可选）"
+              value={completionNotes}
+              onInput={(e) => setCompletionNotes(e.detail.value)}
+              maxlength={200}
+            />
+            <View className={styles.modalActions}>
+              <View
+                className={classnames(styles.modalBtn, styles.cancel)}
+                onClick={() => setShowCompletionModal(false)}
+              >
+                取消
+              </View>
+              <View
+                className={classnames(styles.modalBtn, styles.confirmGreen)}
+                onClick={confirmComplete}
+              >
+                确认完成
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

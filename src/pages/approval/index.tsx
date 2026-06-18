@@ -5,13 +5,24 @@ import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
 import StatusTag from '@/components/StatusTag';
 import classnames from 'classnames';
-import type { Appointment } from '@/types';
+import type { Appointment, UserRole } from '@/types';
 
 type TabType = 'myPending' | 'pending' | 'approved' | 'all';
 
 const ApprovalPage: React.FC = () => {
-  const { appointments, approveAppointment, rejectAppointment, currentUser, isMyApprovalTurn } = useAppStore();
+  const {
+    appointments,
+    approveAppointment,
+    rejectAppointment,
+    resubmitAppointment,
+    savePreOpAssessment,
+    currentUser,
+    isMyApprovalTurn,
+    switchRole
+  } = useAppStore();
+
   const [activeTab, setActiveTab] = useState<TabType>('myPending');
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 
   const myPendingCount = useMemo(() => {
     return appointments.filter(apt => isMyApprovalTurn(apt)).length;
@@ -45,6 +56,21 @@ const ApprovalPage: React.FC = () => {
     return map[role] || role;
   };
 
+  const isDoctorNodeForApt = (apt: Appointment) => {
+    if (apt.status !== 'pending_approval') return false;
+    const node = apt.approvalNodes[apt.currentApprovalIndex];
+    return node?.type === 'doctor' && node?.status === 'pending';
+  };
+
+  const canDoctorApprove = (apt: Appointment): boolean => {
+    if (!isDoctorNodeForApt(apt)) return true;
+    const assess = apt.preOpAssessment;
+    if (!assess) return false;
+    if (!assess.informedConsent) return false;
+    if (!assess.doctorSignature) return false;
+    return true;
+  };
+
   const filteredAppointments = useMemo(() => {
     let result = [...appointments];
 
@@ -61,14 +87,20 @@ const ApprovalPage: React.FC = () => {
     });
   }, [appointments, activeTab, isMyApprovalTurn]);
 
-  const handleApprove = (e: React.MouseEvent, id: string) => {
+  const handleApprove = (e: React.MouseEvent, apt: Appointment) => {
     e.stopPropagation();
+
+    if (isDoctorNodeForApt(apt) && !canDoctorApprove(apt)) {
+      Taro.showToast({ title: '请先完成术前评估、知情同意和签字', icon: 'none' });
+      return;
+    }
+
     Taro.showModal({
       title: '确认通过',
       content: '确定要通过该预约的审批吗？',
       success: (res) => {
         if (res.confirm) {
-          const ok = approveAppointment(id);
+          const ok = approveAppointment(apt.id);
           if (ok) {
             Taro.showToast({ title: '已通过', icon: 'success' });
           } else {
@@ -99,10 +131,34 @@ const ApprovalPage: React.FC = () => {
     });
   };
 
+  const handleResubmit = (e: React.MouseEvent, apt: Appointment) => {
+    e.stopPropagation();
+    Taro.showModal({
+      title: '确认重新提交',
+      content: '补充资料后重新提交审批？',
+      success: (res) => {
+        if (res.confirm) {
+          const ok = resubmitAppointment(apt.id, '补充资料后重新提交');
+          if (ok) {
+            Taro.showToast({ title: '已重新提交', icon: 'success' });
+          } else {
+            Taro.showToast({ title: '无权操作', icon: 'none' });
+          }
+        }
+      }
+    });
+  };
+
   const goToDetail = (id: string) => {
     Taro.navigateTo({
       url: `/pages/approval-detail/index?id=${id}`
     });
+  };
+
+  const handleSwitchRole = (role: UserRole) => {
+    switchRole(role);
+    setShowRoleSwitcher(false);
+    Taro.showToast({ title: `已切换为${getRoleName(role)}`, icon: 'success' });
   };
 
   const tabs = [
@@ -110,6 +166,13 @@ const ApprovalPage: React.FC = () => {
     { key: 'pending', label: '全部待审', count: allPendingCount },
     { key: 'approved', label: '已通过', count: approvedCount },
     { key: 'all', label: '全部', count: appointments.length }
+  ];
+
+  const roleOptions: { role: UserRole; label: string }[] = [
+    { role: 'consultant', label: '咨询师' },
+    { role: 'doctor', label: '主诊医生' },
+    { role: 'director', label: '院长' },
+    { role: 'admin', label: '管理员' }
   ];
 
   return (
@@ -129,17 +192,38 @@ const ApprovalPage: React.FC = () => {
         ))}
       </View>
 
-      <View style={{ padding: '16rpx 32rpx', background: '#e6f7ff', display: 'flex', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, color: '#1890ff' }}>
+      <View className={styles.roleBar} onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}>
+        <Text className={styles.roleText}>
           当前角色：{getRoleName(currentUser.role)}（{currentUser.name}）
         </Text>
+        <Text className={styles.roleArrow}>{showRoleSwitcher ? '▲' : '▼'}</Text>
       </View>
+
+      {showRoleSwitcher && (
+        <View className={styles.roleSwitcher}>
+          {roleOptions.map(opt => (
+            <View
+              key={opt.role}
+              className={classnames(
+                styles.roleOption,
+                currentUser.role === opt.role && styles.roleActive
+              )}
+              onClick={() => handleSwitchRole(opt.role)}
+            >
+              {opt.label}
+              {currentUser.role === opt.role && ' ✓'}
+            </View>
+          ))}
+        </View>
+      )}
 
       <View className={styles.listContainer}>
         {filteredAppointments.length > 0 ? (
           filteredAppointments.map(apt => {
             const canOperate = isMyApprovalTurn(apt);
             const wasRejected = hasRejectedNode(apt);
+            const isDoctor = isDoctorNodeForApt(apt);
+            const doctorCanPass = canDoctorApprove(apt);
 
             return (
               <View
@@ -157,8 +241,8 @@ const ApprovalPage: React.FC = () => {
                 </View>
 
                 {wasRejected && (
-                  <View style={{ padding: '8rpx 16rpx', background: '#fff2f0', borderRadius: 8, marginBottom: 16 }}>
-                    <Text style={{ fontSize: 24, color: '#ff4d4f' }}>
+                  <View className={styles.rejectHint}>
+                    <Text className={styles.rejectHintText}>
                       ⚠️ 曾被驳回：{apt.approvalNodes.find(n => n.status === 'rejected')?.comment || '需补充资料'}
                     </Text>
                   </View>
@@ -195,18 +279,34 @@ const ApprovalPage: React.FC = () => {
                     >
                       驳回
                     </View>
-                    <View
-                      className={classnames(styles.btn, styles.btnPrimary)}
-                      onClick={(e) => handleApprove(e, apt.id)}
-                    >
-                      {wasRejected ? '重新提交' : '通过'}
-                    </View>
+                    {wasRejected ? (
+                      <View
+                        className={classnames(styles.btn, styles.btnPrimary)}
+                        onClick={(e) => handleResubmit(e, apt)}
+                      >
+                        重新提交
+                      </View>
+                    ) : isDoctor && !doctorCanPass ? (
+                      <View
+                        className={classnames(styles.btn, styles.btnWarning)}
+                        onClick={() => goToDetail(apt.id)}
+                      >
+                        去完成评估
+                      </View>
+                    ) : (
+                      <View
+                        className={classnames(styles.btn, styles.btnPrimary)}
+                        onClick={(e) => handleApprove(e, apt)}
+                      >
+                        通过
+                      </View>
+                    )}
                   </View>
                 )}
 
                 {!canOperate && apt.status === 'pending_approval' && (
-                  <View style={{ padding: '12rpx 0 0', borderTop: '1rpx solid #f2f3f5' }}>
-                    <Text style={{ fontSize: 24, color: '#86909c' }}>
+                  <View className={styles.waitHint}>
+                    <Text className={styles.waitHintText}>
                       等待{getCurrentStepName(apt)}处理
                     </Text>
                   </View>
@@ -221,6 +321,10 @@ const ApprovalPage: React.FC = () => {
           </View>
         )}
       </View>
+
+      {showRoleSwitcher && (
+        <View className={styles.overlay} onClick={() => setShowRoleSwitcher(false)} />
+      )}
     </ScrollView>
   );
 };

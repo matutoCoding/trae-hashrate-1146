@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
 import classnames from 'classnames';
+import type { UserRole } from '@/types';
 
 const roleMap: Record<string, string> = {
   customer: '顾客',
@@ -14,15 +15,20 @@ const roleMap: Record<string, string> = {
 };
 
 const MinePage: React.FC = () => {
-  const { currentUser, appointments } = useAppStore();
+  const { currentUser, appointments, isMyApprovalTurn, switchRole } = useAppStore();
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+
+  const myPendingCount = useMemo(() => {
+    return appointments.filter(apt => isMyApprovalTurn(apt)).length;
+  }, [appointments, isMyApprovalTurn]);
 
   const stats = useMemo(() => {
     const myAppointments = appointments.filter(
-      apt => apt.consultantName === currentUser.name || 
-        apt.doctorName === currentUser.name || 
+      apt => apt.consultantName === currentUser.name ||
+        apt.doctorName === currentUser.name ||
         apt.directorName === currentUser.name
     );
-    
+
     const pendingCount = appointments.filter(apt => apt.status === 'pending_approval').length;
     const approvedCount = appointments.filter(apt => apt.status === 'approved' || apt.status === 'confirmed').length;
     const completedCount = appointments.filter(apt => apt.status === 'completed').length;
@@ -35,13 +41,26 @@ const MinePage: React.FC = () => {
     };
   }, [appointments, currentUser]);
 
+  const roleOptions: { role: UserRole; label: string }[] = [
+    { role: 'consultant', label: '咨询师' },
+    { role: 'doctor', label: '主诊医生' },
+    { role: 'director', label: '院长' },
+    { role: 'admin', label: '管理员' }
+  ];
+
+  const handleSwitchRole = (role: UserRole) => {
+    switchRole(role);
+    setShowRoleSwitcher(false);
+    Taro.showToast({ title: `已切换为${roleMap[role]}`, icon: 'success' });
+  };
+
   const menuGroups = [
     {
       title: '业务管理',
       items: [
         { icon: '📅', title: '我的预约', desc: '查看我参与的预约', color: 'primary', badge: stats.total, path: '' },
-        { icon: '✍️', title: '待我审批', desc: '等待处理的审批', color: 'warning', badge: stats.pending, path: '/pages/approval/index' },
-        { icon: '✅', title: '已通过', desc: '我已审批通过的', color: 'success', badge: 0, path: '' },
+        { icon: '✍️', title: '待我审批', desc: `等待处理（${myPendingCount}）`, color: 'warning', badge: myPendingCount, path: '/pages/approval/index' },
+        { icon: '✅', title: '已通过', desc: '我已审批通过的', color: 'success', badge: stats.approved, path: '' },
       ]
     },
     {
@@ -99,7 +118,28 @@ const MinePage: React.FC = () => {
               {roleMap[currentUser.role] || currentUser.role}
             </View>
           </View>
+          <View className={styles.switchRoleBtn} onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}>
+            <Text className={styles.switchRoleText}>切换角色</Text>
+          </View>
         </View>
+
+        {showRoleSwitcher && (
+          <View className={styles.roleSwitcher}>
+            {roleOptions.map(opt => (
+              <View
+                key={opt.role}
+                className={classnames(
+                  styles.roleOption,
+                  currentUser.role === opt.role && styles.roleActive
+                )}
+                onClick={() => handleSwitchRole(opt.role)}
+              >
+                {opt.label}
+                {currentUser.role === opt.role && ' ✓'}
+              </View>
+            ))}
+          </View>
+        )}
 
         <View className={styles.statsRow}>
           <View className={styles.statItem}>
@@ -107,8 +147,8 @@ const MinePage: React.FC = () => {
             <Text className={styles.statLabel}>总预约数</Text>
           </View>
           <View className={styles.statItem}>
-            <Text className={styles.statValue}>{stats.pending}</Text>
-            <Text className={styles.statLabel}>待审批</Text>
+            <Text className={styles.statValue}>{myPendingCount}</Text>
+            <Text className={styles.statLabel}>待我审批</Text>
           </View>
           <View className={styles.statItem}>
             <Text className={styles.statValue}>{stats.completed}</Text>

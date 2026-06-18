@@ -63,10 +63,22 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           <Text className={styles.customerName}>
             咨询师：{appointment.consultantName}
           </Text>
+          {appointment.executionInfo?.executingDoctor && (
+            <Text className={styles.customerName}>
+              医生：{appointment.executionInfo.executingDoctor}
+            </Text>
+          )}
         </View>
-        <Text className={styles.timeInfo}>
-          {appointment.startTime} - {appointment.endTime}
-        </Text>
+        {appointment.executionInfo?.startTime && (
+          <Text className={styles.timeInfo}>
+            执行于 {new Date(appointment.executionInfo.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        )}
+        {!appointment.executionInfo?.startTime && (
+          <Text className={styles.timeInfo}>
+            {appointment.startTime} - {appointment.endTime}
+          </Text>
+        )}
       </View>
     </View>
   );

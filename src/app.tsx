@@ -44,7 +44,8 @@ function App(props) {
     completeAppointment,
     checkTimeConflict,
     getAppointmentById,
-    isMyApprovalTurn
+    isMyApprovalTurn,
+    switchRole
   }), [state]);
 
   return (

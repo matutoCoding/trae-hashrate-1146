@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Textarea, Input } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import styles from './index.module.scss';
@@ -6,7 +6,37 @@ import { useAppStore } from '@/store/appStore';
 import StatusTag from '@/components/StatusTag';
 import ApprovalFlow from '@/components/ApprovalFlow';
 import classnames from 'classnames';
-import type { Appointment, PreOpAssessment } from '@/types';
+import type { Appointment, PreOpAssessment, OperationType } from '@/types';
+
+const operationTypeLabel: Record<OperationType, string> = {
+  create: '创建预约',
+  approve: '审批通过',
+  reject: '审批驳回',
+  resubmit: '重新提交',
+  start_execution: '开始执行',
+  complete: '标记完成',
+  cancel: '取消预约'
+};
+
+const operationTypeIcon: Record<OperationType, string> = {
+  create: '📝',
+  approve: '✅',
+  reject: '❌',
+  resubmit: '🔄',
+  start_execution: '▶️',
+  complete: '🎉',
+  cancel: '🚫'
+};
+
+const operationTypeColor: Record<OperationType, string> = {
+  create: '#1890ff',
+  approve: '#52c41a',
+  reject: '#ff4d4f',
+  resubmit: '#faad14',
+  start_execution: '#722ed1',
+  complete: '#52c41a',
+  cancel: '#86909c'
+};
 
 const ApprovalDetailPage: React.FC = () => {
   const router = useRouter();
@@ -359,6 +389,43 @@ const ApprovalDetailPage: React.FC = () => {
         <View className={styles.section}>
           <Text className={styles.sectionTitle}>备注信息</Text>
           <Text style={{ fontSize: 28, color: '#4E5969', lineHeight: 1.6 }}>{appointment.notes}</Text>
+        </View>
+      )}
+
+      {appointment.operationLogs && appointment.operationLogs.length > 0 && (
+        <View className={styles.section}>
+          <Text className={styles.sectionTitle}>操作日志</Text>
+          <View className={styles.logTimeline}>
+            {appointment.operationLogs.map((log, idx) => (
+              <View key={log.id} className={styles.logItem}>
+                <View className={styles.logDot} style={{ background: operationTypeColor[log.type] }}>
+                  <Text style={{ fontSize: 20 }}>{operationTypeIcon[log.type]}</Text>
+                </View>
+                {idx < appointment.operationLogs.length - 1 && (
+                  <View className={styles.logLine} />
+                )}
+                <View className={styles.logContent}>
+                  <View className={styles.logHeader}>
+                    <Text className={styles.logType} style={{ color: operationTypeColor[log.type] }}>
+                      {operationTypeLabel[log.type]}
+                    </Text>
+                    <Text className={styles.logTime}>
+                      {log.operatedAt ? new Date(log.operatedAt).toLocaleString('zh-CN') : ''}
+                    </Text>
+                  </View>
+                  <Text className={styles.logOperator}>
+                    {log.operatorName}{log.operatorRole ? `（${log.operatorRole}）` : ''}
+                  </Text>
+                  {log.comment && (
+                    <Text className={styles.logComment}>{log.comment}</Text>
+                  )}
+                  {log.details && (
+                    <Text className={styles.logDetails}>{log.details}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       )}
 

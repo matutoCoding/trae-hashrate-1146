@@ -211,3 +211,81 @@
   color: $color-error;
   margin-right: $spacing-sm;
 }
+
+.roleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 32rpx;
+  background: #e6f7ff;
+  cursor: pointer;
+}
+
+.roleText {
+  font-size: 24;
+  color: #1890ff;
+}
+
+.roleArrow {
+  font-size: 20;
+  color: #1890ff;
+}
+
+.roleSwitcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 16rpx 32rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #f2f3f5;
+}
+
+.roleOption {
+  padding: 12rpx 32rpx;
+  border-radius: 48rpx;
+  font-size: 24;
+  background: #f2f3f5;
+  color: #4e5969;
+}
+
+.roleActive {
+  background: #e6f7ff;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.btnWarning {
+  background: #fffbe6;
+  color: #faad14;
+}
+
+.rejectHint {
+  padding: 8rpx 16rpx;
+  background: #fff2f0;
+  border-radius: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.rejectHintText {
+  font-size: 24;
+  color: #ff4d4f;
+}
+
+.waitHint {
+  padding: 12rpx 0 0;
+  border-top: 1rpx solid #f2f3f5;
+}
+
+.waitHintText {
+  font-size: 24;
+  color: #86909c;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+}
